@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/syleron/426c-server/common/security"
 )
 
 var (
@@ -9,10 +10,22 @@ var (
 )
 
 func main () {
-	fmt.Println("426c Server")
+	fmt.Println(`
+  ____ ___  ____    
+ / / /|_  |/ __/____
+/_  _/ __// _ \/ __/
+ /_//____/\___/\__/
+        www.426c.net
+`)
 	// Generate new RSA keys
+	security.GenerateCACert("127.0.0.1")
+	if err := security.GenTLSKeys("127.0.0.1"); err != nil {
+		panic(err)
+	}
 	// Create new instance of server
 	server := setupServer(fmt.Sprintf(":%v", port))
 	defer server.shutdown()
+	// Handle incoming connections
+	server.connectionHandler()
 }
 

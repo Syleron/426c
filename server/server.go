@@ -21,7 +21,7 @@ type Server struct {
 func setupServer(laddr string) *Server {
 	// Generate new tls keys
 	// Read our certs
-	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
+	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
 	if err != nil {
 		panic(err)
 	}
@@ -65,10 +65,9 @@ func (s *Server) newClient(conn net.Conn) {
 	br := bufio.NewReader(client.Conn)
 
 	packet, err := packetRead(br)
-	if err != nil {
+	if (err != nil) || (packet[0] != CMD_IDENT) {
 		return
 	}
-
 	if ok := s.cmdIdent(client, packet[1:]); ok {
 		fmt.Printf("new user - %s", client.Username)
 	}
