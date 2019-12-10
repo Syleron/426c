@@ -14,7 +14,7 @@ func main() {
 	client := setupClient()
 	defer client.Close()
 	// Setup our go routine for connections handlers
-	go client.connectionHandler()
+	client.connectionHandler()
 	// Setup our UI
-	setupUI()
+	//setupUI()
 }

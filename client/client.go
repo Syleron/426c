@@ -1,18 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
+	"github.com/syleron/426c/common/packet"
 	"net"
 )
 
 type Client struct {
+	Reader     *bufio.Reader
+	Writer     *bufio.Writer
 	Conn net.Conn
 }
 
 func setupClient() *Client {
-
 	// Setup our listener
 	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
@@ -29,15 +32,27 @@ func setupClient() *Client {
 	if err != nil {
 		panic(err)
 	}
-	//ui.addInfoMessage("connected")
 	return &Client{
+		Writer: bufio.NewWriter(conn),
+		Reader: bufio.NewReader(conn),
 		Conn: conn,
 	}
 }
 
+func (c *Client) Send(cmdType int, buf []byte) (int, error) {
+	return c.Conn.Write(packetForm(byte(cmdType), buf))
+}
+
 func (c *Client) connectionHandler() {
+	c.Send(CMD_IDENT, []byte("testing"))
+	c.Send(CMD_MSGALL, []byte("more please"))
+	c.Send(CMD_WHO, []byte("more please"))
 	for  {
-		fmt.Fprintf(c.Conn, "testing like a boss" + "\n")
+		line, err := packet.PacketRead(c.Reader)
+		if err != nil {
+			break
+		}
+		fmt.Println(string(line[1:]))
 	}
 }
 

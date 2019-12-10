@@ -71,7 +71,7 @@ func (s *Server) newClient(conn net.Conn) {
 		return
 	}
 	if ok := s.cmdIdent(client, packet[1:]); ok {
-		fmt.Printf("new user - %s", client.Username)
+		log.Printf("new user - %s", client.Username)
 	}
 	for {
 		packet, err = packetRead(br)
