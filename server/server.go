@@ -16,6 +16,12 @@ import (
 // Length of the user connected gives them currency
 // Register user onto the network using their public key
 
+// TODO - Registering user onto the network
+// TODO - Creating groups (Permanent or not?) (Protected?)
+// TODO - Distribution of "blocks"
+// TODO - Charge blocks for sending a message
+// TODO - Increase the cost of blocks depending on total number of spam (Calculate the rate of messaging for a particular room)
+
 type Server struct {
 	listener net.Listener
 	clients map[string]*Client
