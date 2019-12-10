@@ -14,9 +14,7 @@ func main() {
   ____ ___  ____    
  / / /|_  |/ __/____
 /_  _/ __// _ \/ __/
- /_//____/\___/\__/
-        www.426c.net
-`)
+ /_//____/\___/\__/.net v` + VERSION + "\n")
 	// Generate new RSA keys
 	if err := security.GenerateKeys("127.0.0.1"); err != nil {
 		panic(err)
