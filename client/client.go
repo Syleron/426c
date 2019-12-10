@@ -1,53 +1,60 @@
 package main
 
 import (
-	"bufio"
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
-	"os"
+	"net"
 )
 
 type Client struct {
-
+	Conn net.Conn
 }
 
-func setupClient() {
-	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
+func setupClient() *Client {
+
+	// Setup our listener
+	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
 		panic(err)
 	}
-	config := tls.Config{Certificates: []tls.Certificate{cert}}
+	config := tls.Config{
+		Certificates: []tls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}
 	config.Rand = rand.Reader
 	// connect to this socket
-	conn, _ := tls.Dial("tcp", "127.0.0.1:8081", &config)
-	for {
-		// read in input from stdin
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Text to send: ")
-		text, _ := reader.ReadString('\n')
-		// send to socket
-		fmt.Fprintf(conn, text + "\n")
-		// listen for reply
-		message, _ := bufio.NewReader(conn).ReadString('\n')
-		fmt.Print("Message from server: "+message)
+	// TODO This should be a client command rather done automagically.
+	conn, err := tls.Dial("tcp", "127.0.0.1:9000", &config)
+	if err != nil {
+		panic(err)
+	}
+	//ui.addInfoMessage("connected")
+	return &Client{
+		Conn: conn,
 	}
 }
 
-func connectionHandler() {}
+func (c *Client) connectionHandler() {
+	for  {
+		fmt.Fprintf(c.Conn, "testing like a boss" + "\n")
+	}
+}
 
-func msgReqShareKey() {}
+func (c *Client) msgReqShareKey() {}
 
-func msgEncShareKey() {}
+func (c *Client) msgEncShareKey() {}
 
-func msgSendShareKey() {}
+func (c *Client) msgSendShareKey() {}
 
-func msgReqPubKey() {}
+func (c *Client) msgReqPubKey() {}
 
-func msgSendPubKey() {}
+func (c *Client) msgSendPubKey() {}
 
-func msgEncPubKey() {}
+func (c *Client) msgEncPubKey() {}
 
-func ident() {}
+func (c *Client) ident() {}
 
-func who() {}
+func (c *Client) who() {}
+
+func (c *Client) Close() {}

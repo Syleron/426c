@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/syleron/426c-server/common/security"
+	"github.com/syleron/426c/common/security"
 )
 
 var (
@@ -18,8 +18,7 @@ func main() {
         www.426c.net
 `)
 	// Generate new RSA keys
-	security.GenerateCACert("127.0.0.1")
-	if err := security.GenTLSKeys("127.0.0.1"); err != nil {
+	if err := security.GenerateKeys("127.0.0.1"); err != nil {
 		panic(err)
 	}
 	// Create new instance of server

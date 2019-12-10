@@ -6,237 +6,62 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"errors"
-	"fmt"
-	"github.com/labstack/gommon/log"
-	"github.com/syleron/pulseha/src/utils"
+	"log"
 	"math/big"
 	"net"
 	"os"
+	"strings"
 	"time"
 )
 
-const CertDir = "./"
-
-func GenTLSKeys(ip string) error {
-	utils.CreateFolder(CertDir)
-	if !utils.CheckFileExists(CertDir+"/ca.crt") ||
-		!utils.CheckFileExists(CertDir+"/ca.key") {
-		return errors.New("unable to generate TLS keys as ca.crt/ca.key are missing")
-	}
-	// Load the CA
-	caCert, err := utils.LoadFile(CertDir + "ca.crt")
+func GenerateKeys(host string) error {
+	priv, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {
-		log.Error(err.Error())
-		return errors.New(err.Error())
+		return err
 	}
-	caKey, err := utils.LoadFile(CertDir + "ca.key")
-	if err != nil {
-		log.Error(err.Error())
-		return errors.New(err.Error())
+	notBefore := time.Now()
+	notAfter := notBefore.Add(365*24*time.Hour)
+	// end of ASN.1 time
+	endOfTime := time.Date(2049, 12, 31, 23, 59, 59, 0, time.UTC)
+	if notAfter.After(endOfTime) {
+		notAfter = endOfTime
 	}
-	// Make sure we have values for both caCert and caKey
-	if len(caKey) == 0 || len(caCert) == 0 {
-		return errors.New("invalid ca.cert ca.key values")
-	}
-	// Decode the cert and key
-	cpb, _ := pem.Decode(caCert)
-	kpb, _ := pem.Decode(caKey)
-	//// Parse the cert
-	cert, e := x509.ParseCertificate(cpb.Bytes)
-	if e != nil {
-		fmt.Println("parsex509:", e.Error())
-		os.Exit(1)
-	}
-	// Parse the key
-	key, e := x509.ParsePKCS1PrivateKey(kpb.Bytes)
-	if e != nil {
-		fmt.Println("parsekey:", e.Error())
-		os.Exit(1)
-	}
-	// Generate Server certs
-	GenerateServerCert(ip, cert, key)
-	// Generate Client certs
-	GenerateClientCert(cert, key)
-	return nil
-}
-
-func GenerateCACert(ip string) {
-	utils.CreateFolder(CertDir)
-	// Generate new key pair
-	rootKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		log.Fatalf("generating random key: %v", err)
-	}
-	// Generate Cert Template
-	rootCertTmpl, err := certTemplate()
-	if err != nil {
-		log.Fatalf("creating cert template: %v", err)
-	}
-	// Populate cert template
-	rootCertTmpl.IsCA = true
-	rootCertTmpl.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature
-	rootCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
-	rootCertTmpl.IPAddresses = []net.IP{net.ParseIP(ip)}
-	// Generate cert from template and sign
-	_, rootCertPEM, err := createCert(rootCertTmpl, rootCertTmpl, &rootKey.PublicKey, rootKey)
-	if err != nil {
-		log.Fatalf("error creating cert: %v", err)
-	}
-	// write keys
-	WriteCertFile("ca", rootCertPEM)
-	WriteKeyFileFromRSAKey("ca", rootKey)
-}
-
-func GenerateCerts(ip string, caCert *x509.Certificate, caKey *rsa.PrivateKey) {
-	utils.CreateFolder(CertDir)
-	// Generate new key pair
-	servKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		log.Fatalf("generating random key: %v", err)
-	}
-	// Generate Cert template
-	servCertTmpl, err := certTemplate()
-	if err != nil {
-		log.Fatalf("creating cert template: %v", err)
-	}
-	// Populate cert template
-	servCertTmpl.KeyUsage = x509.KeyUsageDigitalSignature
-	servCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
-	servCertTmpl.IPAddresses = []net.IP{net.ParseIP(ip)}
-	// Generate cert from template and sign
-	_, servCertPEM, err := createCert(servCertTmpl, caCert, &servKey.PublicKey, caKey)
-	if err != nil {
-		log.Fatalf("error creating cert: %v", err)
-	}
-	// write keys
-	hostname, err := utils.GetHostname()
-	if err != nil {
-		log.Error("unable to generate cert because unable to get hostname")
-		return
-	}
-	WriteCertFile(hostname, servCertPEM)
-	WriteKeyFileFromRSAKey(hostname, servKey)
-}
-
-func GenerateServerCert(ip string, caCert *x509.Certificate, caKey *rsa.PrivateKey) {
-	utils.CreateFolder(CertDir)
-	// Generate new key pair
-	servKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		log.Fatalf("generating random key: %v", err)
-	}
-	// Generate Cert template
-	servCertTmpl, err := certTemplate()
-	if err != nil {
-		log.Fatalf("creating cert template: %v", err)
-	}
-	// Populate cert template
-	servCertTmpl.KeyUsage = x509.KeyUsageDigitalSignature
-	servCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
-	servCertTmpl.IPAddresses = []net.IP{net.ParseIP(ip)}
-	// Generate cert from template and sign
-	_, servCertPEM, err := createCert(servCertTmpl, caCert, &servKey.PublicKey, caKey)
-	if err != nil {
-		log.Fatalf("error creating cert: %v", err)
-	}
-	WriteCertFile("server", servCertPEM)
-	WriteKeyFileFromRSAKey("server", servKey)
-}
-
-func GenerateClientCert(caCert *x509.Certificate, caKey *rsa.PrivateKey) {
-	utils.CreateFolder(CertDir)
-	// Generate new key pair
-	clientKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		log.Fatalf("generating random key: %v", err)
-	}
-	// Generate Cert Template
-	clientCertTmpl, err := certTemplate()
-	if err != nil {
-		log.Fatalf("creating cert template: %v", err)
-	}
-	// Populate cert template
-	clientCertTmpl.KeyUsage = x509.KeyUsageDigitalSignature
-	clientCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
-	// the root cert signs the cert by again providing its private key
-	_, clientCertPEM, err := createCert(clientCertTmpl, caCert, &clientKey.PublicKey, caKey)
-	if err != nil {
-		log.Fatalf("error creating cert: %v", err)
-	}
-	WriteCertFile("client", clientCertPEM)
-	WriteKeyFileFromRSAKey("client", clientKey)
-}
-
-func certTemplate() (*x509.Certificate, error) {
-	// generate a random serial number
-	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		return nil, errors.New("failed to generate serial number: " + err.Error())
-	}
-	hostname, err := utils.GetHostname()
-	if err != nil {
-		return nil, errors.New("unable to generate cert template because unable to get hostname")
-	}
-	tmpl := x509.Certificate{
-		SerialNumber: serialNumber,
+	template := x509.Certificate{
+		SerialNumber: new(big.Int).SetInt64(0),
 		Subject: pkix.Name{
-			Organization: []string{"PulseHA"},
-			CommonName:   hostname,
+			Organization: []string{"Acme Co"},
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(time.Duration(730) * time.Hour * 24),
+		NotBefore: notBefore,
+		NotAfter:  notAfter,
+
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
-	return &tmpl, nil
-}
-
-func createCert(template, parent *x509.Certificate, pub interface{}, parentPriv interface{}) (cert *x509.Certificate, certPEM []byte, err error) {
-	certDER, err := x509.CreateCertificate(rand.Reader, template, parent, pub, parentPriv)
-	if err != nil {
-		return
+	hosts := strings.Split(host, ",")
+	for _, h := range hosts {
+		if ip := net.ParseIP(h); ip != nil {
+			template.IPAddresses = append(template.IPAddresses, ip)
+		} else {
+			template.DNSNames = append(template.DNSNames, h)
+		}
 	}
-	// parse the resulting certificate so we can use it again
-	cert, err = x509.ParseCertificate(certDER)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
-		return
+		return err
 	}
-	// PEM encode the certificate
-	b := pem.Block{Type: "CERTIFICATE", Bytes: certDER}
-	certPEM = pem.EncodeToMemory(&b)
-	return
-}
-
-func WriteCertFile(fileName string, cert []byte) {
-	// Write the cert to file
-	certOut, err := os.Create(CertDir + "/" + fileName + ".crt")
+	certOut, err := os.Create("cert.pem")
 	if err != nil {
-		fmt.Println("Failed writing key:", err)
-		os.Exit(1)
+		return err
 	}
-	certOut.Write(cert)
+	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	certOut.Close()
-}
-
-func WriteKeyFile(fileName string, key []byte) {
-	// Write the key to file
-	keyOut, err := os.OpenFile(CertDir+fileName+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	keyOut, err := os.OpenFile("key.pem", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		fmt.Println("Failed writing key:", err)
-		os.Exit(1)
+		log.Print("failed to open key.pem for writing:", err)
+		return err
 	}
-	keyOut.Write(key)
+	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 	keyOut.Close()
-}
-
-func WriteKeyFileFromRSAKey(filename string, key *rsa.PrivateKey) {
-	// Write the key to file
-	keyOut, err := os.OpenFile(CertDir+"/"+filename+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		fmt.Println("Failed writing key:", err)
-		os.Exit(1)
-	}
-	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
-	keyOut.Close()
+	return nil
 }

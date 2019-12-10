@@ -20,6 +20,7 @@ const (
 	// Server Responses
 	SVR_NOTICE
 	SVR_MSG
+	SVR_VERSION
 )
 
 const HEADER_BYTE byte = '\xde'

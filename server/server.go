@@ -24,7 +24,7 @@ type Server struct {
 func setupServer(laddr string) *Server {
 	// Generate new tls keys
 	// Read our certs
-	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
+	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +35,7 @@ func setupServer(laddr string) *Server {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Listening on port %v\n", port)
+	log.Printf("Listening on port %v\n", port)
 	return &Server{
 		listener: listener,
 		clients: make(map[string]*Client),
@@ -43,15 +43,17 @@ func setupServer(laddr string) *Server {
 }
 
 func (s *Server) connectionHandler() {
-	conn, err := s.listener.Accept()
-	if err != nil {
-		log.Error(conn)
+	for {
+		conn, err := s.listener.Accept()
+		if err != nil {
+			log.Error(conn)
+		}
+		go s.newClient(conn)
 	}
-	go s.newClient(conn)
 }
 
 func (s *Server) newClient(conn net.Conn) {
-	fmt.Println("New client connection")
+	log.Print("New client connection")
 	defer func() {
 		// Remove our client
 		s.clientRemoveByConnection(conn)
@@ -85,10 +87,13 @@ func (s *Server) commandRouter(client *Client, packet []byte) {
 	cmd := packet[0]
 	switch {
 	case cmd == CMD_MSGALL:
+		log.Print("Message all command")
 		s.cmdMsgAll(client, packet[1:])
 	case cmd == CMD_MSGTO:
+		log.Print("Message to command")
 		s.cmdMsgTo(client, packet[1:])
 	case cmd == CMD_WHO:
+		log.Print("Message who command")
 		s.cmdWho(client)
 	default:
 		client.SendNotice("Unknown command")

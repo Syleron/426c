@@ -11,7 +11,8 @@ type UserInterface struct {
 	textView *tview.TextView
 }
 
-func (ui *UserInterface) setup() {
+func setupUI() {
+	ui = &UserInterface{}
 	app := tview.NewApplication()
 
 	// Setup the text view
@@ -27,14 +28,14 @@ func (ui *UserInterface) setup() {
 
 	// Setup the chat input form
 	chatInput := tview.NewInputField().
-		SetLabel(" " + "Syleron" + " ").
+		SetLabel(" " + "-" + " ").
 		SetFieldWidth(0)
 	chatInput.SetDoneFunc(func(key tcell.Key) {
 		//words := strings.Fields(chatInput.GetText())
 		//command := &Commands{}
 		//if len(words) > 0 {
 		//	if exists := command.Send(words[0], words); !exists {
-				ui.addMessage("white", chatInput.GetText(), "Syleron")
+				ui.addMessage("white", chatInput.GetText(), "-")
 		//	}
 		//}
 		chatInput.SetText("")
@@ -75,12 +76,12 @@ func (ui *UserInterface) setup() {
                        Security. Privacy.
 	`)
 
-	ui.addText("[yellow]This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.\n")
+	ui.addText("[yellow]This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n")
 
-	ui.addWarningMessage("testing123")
-	ui.addInfoMessage("asdadssssss")
-	ui.addDebugMessage("this is a debug message")
-	ui.addErrorMessage("this is an error message")
+	//ui.addWarningMessage("testing123")
+	//ui.addInfoMessage("asdadssssss")
+	//ui.addDebugMessage("this is a debug message")
+	//ui.addErrorMessage("this is an error message")
 
 	if err := app.SetRoot(flex, true).Run(); err != nil {
 		panic(err)
