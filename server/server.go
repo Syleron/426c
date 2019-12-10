@@ -13,6 +13,9 @@ import (
 	"os"
 )
 
+// Length of the user connected gives them currency
+// Register user onto the network using their public key
+
 type Server struct {
 	listener net.Listener
 	clients map[string]*Client
@@ -57,13 +60,10 @@ func (s *Server) newClient(conn net.Conn) {
 			log.Error(err)
 		}
 	}()
-
 	client := &Client{
 		Conn:     conn,
 	}
-
 	br := bufio.NewReader(client.Conn)
-
 	packet, err := packetRead(br)
 	if (err != nil) || (packet[0] != CMD_IDENT) {
 		return
@@ -71,7 +71,6 @@ func (s *Server) newClient(conn net.Conn) {
 	if ok := s.cmdIdent(client, packet[1:]); ok {
 		fmt.Printf("new user - %s", client.Username)
 	}
-
 	for {
 		packet, err = packetRead(br)
 		if err != nil {

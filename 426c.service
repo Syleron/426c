@@ -1,0 +1,17 @@
+[Unit]
+After=network.target
+Requires=network.target
+Description=426c Server
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/sbin/server
+ExecReload=/bin/kill -SIGUSR2 $MAINPID
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

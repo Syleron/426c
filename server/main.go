@@ -9,7 +9,7 @@ var (
 	port = 9000
 )
 
-func main () {
+func main() {
 	fmt.Println(`
   ____ ___  ____    
  / / /|_  |/ __/____
