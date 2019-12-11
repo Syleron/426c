@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/labstack/gommon/log"
+	plib "github.com/syleron/426c/common/packet"
 	"net"
 	"os"
 )
@@ -72,8 +73,8 @@ func (s *Server) newClient(conn net.Conn) {
 		Conn:     conn,
 	}
 	br := bufio.NewReader(client.Conn)
-	packet, err := packetRead(br)
-	if (err != nil) || (packet[0] != CMD_IDENT) {
+	packet, err := plib.PacketRead(br)
+	if (err != nil) || (packet[0] != plib.CMD_IDENT) {
 		log.Error(err.Error())
 		return
 	}
@@ -81,7 +82,7 @@ func (s *Server) newClient(conn net.Conn) {
 		log.Printf("new user - %s", client.Username)
 	}
 	for {
-		packet, err = packetRead(br)
+		packet, err = plib.PacketRead(br)
 		if err != nil {
 			log.Error(err)
 			break
@@ -93,13 +94,13 @@ func (s *Server) newClient(conn net.Conn) {
 func (s *Server) commandRouter(client *Client, packet []byte) {
 	cmd := packet[0]
 	switch {
-	case cmd == CMD_MSGALL:
+	case cmd == plib.CMD_MSGALL:
 		log.Print("Message all command")
 		s.cmdMsgAll(client, packet[1:])
-	case cmd == CMD_MSGTO:
+	case cmd == plib.CMD_MSGTO:
 		log.Print("Message to command")
 		s.cmdMsgTo(client, packet[1:])
-	case cmd == CMD_WHO:
+	case cmd == plib.CMD_WHO:
 		log.Print("Message who command")
 		s.cmdWho(client)
 	default:
@@ -127,7 +128,7 @@ func (s *Server) cmdMsgAll(client *Client, packet []byte) (int, error) {
 	buf.Write([]byte(client.Username))
 	buf.Write(packet)
 	// Broadcast the message to everyone
-	s.broadcast(SVR_MSG, buf.Bytes())
+	s.broadcast(plib.SVR_MSG, buf.Bytes())
 	// Return success
 	return 0, nil
 }
@@ -156,13 +157,13 @@ func (s *Server) cmdMsgTo(client *Client, packet []byte) (int, error) {
 	binary.Write(&buf, binary.BigEndian, uint16(len(client.Username)))
 	buf.Write([]byte(client.Username))
 	buf.Write(data)
-	return targetClient.Send(SVR_MSG, buf.Bytes())
+	return targetClient.Send(plib.SVR_MSG, buf.Bytes())
 }
 
 func (s *Server) cmdIdent(client *Client, packet []byte) bool {
 	username := string(packet)
 	// Make sure our we have a valid username length
-	if len(username) > MAX_NAME_LENGTH {
+	if len(username) > plib.MAX_NAME_LENGTH {
 		_, err := client.SendNotice("username is too long")
 		if err != nil {
 			log.Error(err)
@@ -177,7 +178,7 @@ func (s *Server) cmdIdent(client *Client, packet []byte) bool {
 	// Set our username for our client connection
 	client.Username = username
 	// Let everyone know that we have connected
-	s.broadcast(SVR_NOTICE, []byte(username + " connected"))
+	s.broadcast(plib.SVR_NOTICE, []byte(username + " connected"))
 	return true
 }
 

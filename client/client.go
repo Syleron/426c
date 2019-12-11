@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
-	"github.com/syleron/426c/common/packet"
+	plib "github.com/syleron/426c/common/packet"
 	"net"
 )
 
@@ -40,15 +40,15 @@ func setupClient() *Client {
 }
 
 func (c *Client) Send(cmdType int, buf []byte) (int, error) {
-	return c.Conn.Write(packetForm(byte(cmdType), buf))
+	return c.Conn.Write(plib.PacketForm(byte(cmdType), buf))
 }
 
 func (c *Client) connectionHandler() {
-	c.Send(CMD_IDENT, []byte("testing"))
-	c.Send(CMD_MSGALL, []byte("more please"))
-	c.Send(CMD_WHO, []byte("more please"))
+	c.Send(plib.CMD_IDENT, []byte("testing"))
+	c.Send(plib.CMD_MSGALL, []byte("more please"))
+	c.Send(plib.CMD_WHO, []byte("more please"))
 	for  {
-		line, err := packet.PacketRead(c.Reader)
+		line, err := plib.PacketRead(c.Reader)
 		if err != nil {
 			break
 		}
