@@ -74,6 +74,7 @@ func (s *Server) newClient(conn net.Conn) {
 	br := bufio.NewReader(client.Conn)
 	packet, err := packetRead(br)
 	if (err != nil) || (packet[0] != CMD_IDENT) {
+		log.Error(err.Error())
 		return
 	}
 	if ok := s.cmdIdent(client, packet[1:]); ok {
