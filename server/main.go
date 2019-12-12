@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/ipfs/go-log"
 	"github.com/syleron/426c/common/security"
 )
 
@@ -19,6 +20,7 @@ func main() {
 	if err := security.GenerateKeys("127.0.0.1"); err != nil {
 		panic(err)
 	}
+	log.SetLogLevel("*", "debug")
 	// Create new instance of server
 	server := setupServer(fmt.Sprintf(":%v", port))
 	defer server.shutdown()

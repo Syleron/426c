@@ -23,6 +23,10 @@ import (
 // TODO - Charge blocks for sending a message
 // TODO - Increase the cost of blocks depending on total number of spam (Calculate the rate of messaging for a particular room)
 
+// Username -> keys
+// Store keys with server
+//
+
 type Server struct {
 	listener net.Listener
 	clients map[string]*Client
@@ -42,7 +46,7 @@ func setupServer(laddr string) *Server {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("Listening on port %v\n", port)
+	log.Infof("Listening on port %v\n", port)
 	return &Server{
 		listener: listener,
 		clients: make(map[string]*Client),
@@ -95,13 +99,13 @@ func (s *Server) commandRouter(client *Client, packet []byte) {
 	cmd := packet[0]
 	switch {
 	case cmd == plib.CMD_MSGALL:
-		log.Print("Message all command")
+		log.Debug("Message all command")
 		s.cmdMsgAll(client, packet[1:])
 	case cmd == plib.CMD_MSGTO:
-		log.Print("Message to command")
+		log.Debug("Message to command")
 		s.cmdMsgTo(client, packet[1:])
 	case cmd == plib.CMD_WHO:
-		log.Print("Message who command")
+		log.Debug("Message who command")
 		s.cmdWho(client)
 	default:
 		client.SendNotice("Unknown command")
@@ -202,7 +206,7 @@ func (s *Server) cmdWho(client *Client) {
 }
 
 func (s *Server) clientAdd(username string, c *Client) error {
-	log.Info("Adding client " + username)
+	log.Debug("Adding client " + username)
 	_, exists := s.clients[username]
 	if exists {
 		return errors.New("user already exists")
@@ -212,7 +216,7 @@ func (s *Server) clientAdd(username string, c *Client) error {
 }
 
 func (s *Server) clientRemoveByUsername(username string) {
-	log.Info("Removing client " + username)
+	log.Debug("Removing client " + username)
 	_, exists := s.clients[username]
 	if exists {
 		delete(s.clients, username)
@@ -229,7 +233,7 @@ func (s *Server) clientRemoveByConnection(conn net.Conn) {
 }
 
 func (s *Server) shutdown() {
-	log.Info("Server shutdown")
+	log.Debug("Server shutdown")
 	if err := s.listener.Close(); err != nil {
 		panic(err)
 	}

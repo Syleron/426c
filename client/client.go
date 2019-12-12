@@ -48,11 +48,11 @@ func (c *Client) connectionHandler() {
 	c.Send(plib.CMD_MSGALL, []byte("more please"))
 	c.Send(plib.CMD_WHO, []byte("more please"))
 	for  {
-		line, err := plib.PacketRead(c.Reader)
+		p, err := plib.PacketRead(c.Reader)
 		if err != nil {
 			break
 		}
-		fmt.Println(string(line[1:]))
+		fmt.Println(string(p[1:]))
 	}
 }
 
