@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/aes"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
@@ -18,18 +17,20 @@ func hashPassword(password string) []byte {
 }
 
 func generateKeys() {
+	fmt.Println("Now for password Hash...")
 	hash := hashPassword("testing")
-	fmt.Println(hex.EncodeToString(hash)) // This is the remainder
-	// Remove the first 32 bits
-	initVector := make([]byte, 16)
-	for i, b := range hash {
-		if i >= 16 && len(initVector) <= 16 {
-			initVector = append(initVector, b)
-		}
-	}
-	fmt.Println(hex.EncodeToString(initVector))
+	hashString := hex.EncodeToString(hash)
+	fmt.Println(hashString)
+	fmt.Println("Now for hash remainder...")
+	hashKey := hashString[32:]
+	fmt.Println(hashKey)
+	// we want only 16 values
+	hashRemainder := hashKey[:16]
+	fmt.Println(hashRemainder)
+	// TODO: Send the remainder to the server
 	//var newHash []byte
 	//// RSA
+	fmt.Println("Now for RSA Key...")
 	var pgp = gopenpgp.GetGopenPGP()
 	rsaKey, err := pgp.GenerateKey(
 		"testing",
@@ -42,14 +43,16 @@ func generateKeys() {
 		panic(err)
 	}
 	fmt.Println(rsaKey) // This is the key
+	fmt.Println("Now for encrypted private key...")
 	// encode our private key
-	c, err := aes.NewCipher(hash)
-	if err != nil {
-		panic(err)
-	}
-	out := make([]byte, len(rsaKey))
-	c.Encrypt(out, []byte(rsaKey))
-	fmt.Println(hex.EncodeToString(out))
+	//c, err := aes.NewCipher([]byte(initVector))
+	//if err != nil {
+	//	panic(err)
+	//}
+	//out := make([]byte, len(rsaKey))
+	//c.Encrypt(out, []byte(rsaKey))
+	//fmt.Println(hex.EncodeToString(out))
+	//fmt.Println("Now for descrypted private key...")
 }
 
 
