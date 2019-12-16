@@ -16,16 +16,15 @@ import (
 /**
 Returns a hash in hex
  */
-func hashPassword(password string) []byte {
+func hashPassword(password string) string {
 	hasher := sha512.New()
 	hasher.Write([]byte(password))
-	return hasher.Sum(nil)
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func generateKeys() {
 	fmt.Println("Now for password Hash...")
-	hash := hashPassword("testing")
-	hashString := hex.EncodeToString(hash)
+	hashString := hashPassword("testing")
 	fmt.Println(hashString)
 	fmt.Println("Now for hash key...")
 	hashKey := hashString[:32]
@@ -42,7 +41,7 @@ func generateKeys() {
 	rsaKey, err := pgp.GenerateKey(
 		"testing",
 		"secure.426c.net",
-		hex.EncodeToString(hash),
+		hashString,
 		"rsa",
 		4096,
 	)

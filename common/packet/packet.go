@@ -16,6 +16,8 @@ const (
 	CMD_WHO
 	CMD_JOINCLUB
 	CMD_LEAVECLUB
+	CMD_REGISTER
+	CMD_LOGIN
 
 	// Server Responses
 	SVR_NOTICE
