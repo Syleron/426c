@@ -59,7 +59,7 @@ func (c *Client) connectionHandler() {
 	}
 }
 
-func (c *Client) msgRegister(username string, password string) {
+func (c *Client) msgRegister(username string, password string) error {
 	var pgp = gopenpgp.GetGopenPGP()
 	// Generate password hash
 	hashString := hashPassword("testing")
@@ -98,8 +98,9 @@ func (c *Client) msgRegister(username string, password string) {
 	// Send our username, hash remainder, encrypted private key, and readable public key.
 	_, err = c.Send(plib.CMD_REGISTER, b)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func (c *Client) msgLogin() {

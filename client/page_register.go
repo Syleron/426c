@@ -27,7 +27,10 @@ func RegisterPage() (id string, content tview.Primitive) {
 				return
 			}
 			// Submit our registration to the server
-			client.msgRegister(username, password)
+			if err := client.msgRegister(username, password); err != nil {
+				panic(err)
+			}
+			pages.SwitchToPage("login")
 		}).
 		AddButton("Back", func() {
 			pages.SwitchToPage("login")

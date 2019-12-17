@@ -6,12 +6,15 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/labstack/gommon/log"
+	"github.com/syleron/426c/common/models"
 	plib "github.com/syleron/426c/common/packet"
 	"net"
 	"os"
+	"time"
 )
 
 // Length of the user connected gives them currency
@@ -23,6 +26,7 @@ import (
 // TODO - Charge blocks for sending a message
 // TODO - Increase the cost of blocks depending on total number of spam (Calculate the rate of messaging for a particular room)
 // TODO - Client/Server Version Validation
+// TODO - Pending messages for offline people
 
 // Username -> keys
 // Store keys with server
@@ -65,7 +69,7 @@ func (s *Server) connectionHandler() {
 }
 
 func (s *Server) newClient(conn net.Conn) {
-	log.Print("New client connection")
+	log.Debug("New client connection")
 	defer func() {
 		// Remove our client
 		s.clientRemoveByConnection(conn)
@@ -79,13 +83,12 @@ func (s *Server) newClient(conn net.Conn) {
 	}
 	br := bufio.NewReader(client.Conn)
 	packet, err := plib.PacketRead(br)
-	if (err != nil) || (packet[0] != plib.CMD_IDENT) {
-		log.Error(err.Error())
-		return
-	}
-	if ok := s.cmdIdent(client, packet[1:]); ok {
-		log.Printf("new user - %s", client.Username)
-	}
+	//if (err != nil) || (packet[0] != plib.CMD_IDENT) {
+	//	return
+	//}
+	//if ok := s.cmdIdent(client, packet[1:]); ok {
+	//	log.Printf("new user - %s", client.Username)
+	//}
 	for {
 		packet, err = plib.PacketRead(br)
 		if err != nil {
@@ -99,6 +102,8 @@ func (s *Server) newClient(conn net.Conn) {
 func (s *Server) commandRouter(client *Client, packet []byte) {
 	cmd := packet[0]
 	switch {
+	case cmd == plib.CMD_REGISTER:
+		s.cmdRegister(client, packet)
 	case cmd == plib.CMD_MSGALL:
 		log.Debug("Message all command")
 		s.cmdMsgAll(client, packet[1:])
@@ -109,14 +114,30 @@ func (s *Server) commandRouter(client *Client, packet []byte) {
 		log.Debug("Message who command")
 		s.cmdWho(client)
 	default:
-		client.SendNotice("Unknown command")
+		log.Debug("Received unknown command")
 	}
 }
 
-func (s *Server) broadcast(cmdType int, buf []byte) {
-	for _, c := range s.clients {
-		go c.Send(cmdType, buf)
+func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
+	log.Debug("received register command")
+	var registerObj models.RegisterModel
+	if err := json.Unmarshal(packet[1:], &registerObj); err != nil {
+		return 1, err
 	}
+	user := &models.User{
+		Username:       registerObj.Username,
+		PassHash:       registerObj.PassHash,
+		EncPrivKey:     registerObj.EncPrivKey,
+		PubKey:         registerObj.PubKey,
+		RegisteredDate: time.Now(),
+		Access:         0,
+	}
+	// Register our user
+	if err := userAdd(user); err != nil {
+		log.Debug(err)
+		return 2, err
+	}
+	return 0, nil
 }
 
 func (s *Server) cmdMsgAll(client *Client, packet []byte) (int, error) {
@@ -203,6 +224,12 @@ func (s *Server) cmdWho(client *Client) {
 	_, err := client.SendNotice(msg)
 	if err != nil {
 		log.Error(err)
+	}
+}
+
+func (s *Server) broadcast(cmdType int, buf []byte) {
+	for _, c := range s.clients {
+		go c.Send(cmdType, buf)
 	}
 }
 

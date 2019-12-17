@@ -14,6 +14,7 @@ func LoginPage() (id string, content tview.Primitive) {
 			password = text
 		}).
 		AddButton("Login", func() {
+
 		}).
 		AddButton("Register", func() {
 			pages.SwitchToPage("register warning")
@@ -24,17 +25,4 @@ func LoginPage() (id string, content tview.Primitive) {
 	form.SetBorder(true).SetTitle("426c Login")
 
 	return "login", Center(40, 10, form)
-}
-
-func loginHandle(username string, password string) error {
-	//token, err := Login(username, password)
-	//if err != nil {
-	//	return err
-	//}
-	//// Create a new user
-	//user = &User{
-	//	Token: token,
-	//	Username: username,
-	//}
-	return nil
 }
