@@ -98,8 +98,12 @@ func (s *Server) newClient(conn net.Conn) {
 func (s *Server) commandRouter(client *Client, packet []byte) {
 	cmd := packet[0]
 	switch {
+	case cmd == plib.CMD_LOGIN:
+		log.Debug("Message login command")
+		s.cmdLogin(client, packet)
 	case cmd == plib.CMD_REGISTER:
-		s.cmdRegister(client, packet)
+		log.Debug("Message register command")
+		s.cmdRegister(client, packet[1:])
 	case cmd == plib.CMD_MSGALL:
 		log.Debug("Message all command")
 		s.cmdMsgAll(client, packet[1:])
@@ -117,7 +121,7 @@ func (s *Server) commandRouter(client *Client, packet []byte) {
 func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
 	log.Debug("received register command")
 	var registerObj models.RegisterModel
-	if err := json.Unmarshal(packet[1:], &registerObj); err != nil {
+	if err := json.Unmarshal(packet, &registerObj); err != nil {
 		return 1, err
 	}
 	user := &models.User{
@@ -133,6 +137,10 @@ func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
 		log.Debug(err)
 		return 2, err
 	}
+	return 0, nil
+}
+
+func (s *Server) cmdLogin(client *Client, packet []byte) (int, error) {
 	return 0, nil
 }
 
