@@ -83,19 +83,15 @@ func (s *Server) newClient(conn net.Conn) {
 	}
 	br := bufio.NewReader(client.Conn)
 	packet, err := plib.PacketRead(br)
-	//if (err != nil) || (packet[0] != plib.CMD_IDENT) {
-	//	return
-	//}
-	//if ok := s.cmdIdent(client, packet[1:]); ok {
-	//	log.Printf("new user - %s", client.Username)
-	//}
+	// Handle initial request
+	s.commandRouter(client, packet)
+	// Handle subsequent requests
 	for {
 		packet, err = plib.PacketRead(br)
 		if err != nil {
 			log.Error(err)
 			break
 		}
-		s.commandRouter(client, packet)
 	}
 }
 

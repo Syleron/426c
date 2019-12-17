@@ -14,8 +14,22 @@ func LoginPage() (id string, content tview.Primitive) {
 			password = text
 		}).
 		AddButton("Login", func() {
-
-		}).
+			if username == "" || password == "" {
+				showError(ClientError{
+					Message:  "Please enter a username and password",
+					Button:   "Continue",
+					Continue: func() {
+						pages.SwitchToPage("login")
+					},
+				})
+				return
+			}
+		// Submit our registration to the server
+		if err := client.msgLogin(username, password); err != nil {
+			panic(err)
+		}
+		pages.SwitchToPage("inbox")
+	}).
 		AddButton("Register", func() {
 			pages.SwitchToPage("register warning")
 		}).

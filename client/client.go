@@ -47,9 +47,6 @@ func (c *Client) Send(cmdType int, buf []byte) (int, error) {
 }
 
 func (c *Client) connectionHandler() {
-	//c.Send(plib.CMD_IDENT, []byte("testing"))
-	//c.Send(plib.CMD_MSGALL, []byte("more please"))
-	//c.Send(plib.CMD_WHO, []byte("more please"))
 	for {
 		p, err := plib.PacketRead(c.Reader)
 		if err != nil {
@@ -62,7 +59,7 @@ func (c *Client) connectionHandler() {
 func (c *Client) msgRegister(username string, password string) error {
 	var pgp = gopenpgp.GetGopenPGP()
 	// Generate password hash
-	hashString := hashPassword("testing")
+	hashString := hashPassword(password)
 	// Calculate hash key
 	hashKey := hashString[:32]
 	// Calculate hash remainder
@@ -103,8 +100,27 @@ func (c *Client) msgRegister(username string, password string) error {
 	return nil
 }
 
-func (c *Client) msgLogin() {
-
+func (c *Client) msgLogin(username string, password string) error {
+	// Generate password hash
+	hashString := hashPassword(password)
+	// Calculate hash remainder
+	hashRemainder := hashString[32:48]
+	// Create our object to send
+	registerObject := &models.LoginModel{
+		Username:   username,
+		Password: hashRemainder,
+	}
+	// Convert our object to a json byte array to send
+	b, err := json.Marshal(registerObject)
+	if err != nil {
+		panic(err)
+	}
+	// Send our username, hash remainder.
+	_, err = c.Send(plib.CMD_LOGIN, b)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Client) msgReqShareKey() {}
