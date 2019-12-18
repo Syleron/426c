@@ -39,9 +39,11 @@ func SearchPage() (id string, content tview.Primitive) {
 	// Define our search form
 	form = tview.NewForm().
 		AddInputField("Search", "", 20, nil, nil).
-		AddDropDown("Type", []string{"Users", "Clubs"}, 0, nil).
 		AddButton("Submit", func() {
 			app.SetFocus(table)
+		}).
+		AddButton("Cancel", func() {
+			pages.SwitchToPage("inbox")
 		})
 
 	// Layout for screens narrower than 100 cells (side bar are hidden).
@@ -55,6 +57,5 @@ func SearchPage() (id string, content tview.Primitive) {
 }
 
 func searchPageDrawTableHeading(table *tview.Table) {
-	table.SetCell(0, 0, tview.NewTableCell("ID").SetTextColor(tcell.ColorPink))
-	table.SetCell(0, 1, tview.NewTableCell("Username").SetTextColor(tcell.ColorPink))
+	table.SetCell(0, 0, tview.NewTableCell("Username").SetTextColor(tcell.ColorPink))
 }

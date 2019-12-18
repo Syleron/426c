@@ -15,7 +15,7 @@ func InboxPage() (id string, content tview.Primitive) {
 	grid := tview.NewGrid().
 		SetRows(1).
 		SetColumns(30, 0).
-		SetBorders(true).
+		SetBorders(false).
 		SetGap(0, 2)
 
 	userGrid :=  tview.NewFlex()
@@ -65,23 +65,21 @@ func InboxPage() (id string, content tview.Primitive) {
 		})
 
 	button := tview.NewButton("Compose").SetSelectedFunc(func() {
+		pages.SwitchToPage("search")
 	})
-	button.SetBorder(true).SetRect(0, 0, 22, 3)
-
-	// Layout for screens narrower than 100 cells (side bar are hidden).
-	//grid.AddItem(chatGrid, 1, 0, 1, 2, 0, 0, true)
+	button.SetBorder(true).SetRect(0, 0, 0, 1)
 
 	// Layout for screens wider than 100 cells.
 	grid.AddItem(userGrid, 1, 0, 1, 1, 0, 100, true).
 		AddItem(chatGrid, 1, 1, 1, 1, 0, 100, false)
 
 	userGrid.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(button, 0, 1, false).
-		AddItem(userListContainer, 1, 1, true), 0, 2, true)
+		AddItem(button, 3, 1, true).
+		AddItem(userListContainer, 0, 1, true), 0, 2, true)
 
 	chatGrid.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(messageContainer, 0, 1, false).
-		AddItem(inputField, 1, 1, true), 0, 2, true)
+		AddItem(inputField, 1, 1, false), 0, 2, false)
 
 	messageContainer.SetScrollable(true)
 

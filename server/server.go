@@ -20,7 +20,7 @@ import (
 // Length of the user connected gives them currency
 // Register user onto the network using their public key
 
-// TODO - Registering user onto the network
+// TODO - Registering user onto the network - DONE
 // TODO - Creating groups (Permanent or not?) (Protected?)
 // TODO - Distribution of "blocks"
 // TODO - Charge blocks for sending a message

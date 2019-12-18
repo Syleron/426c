@@ -10,4 +10,5 @@ type User struct {
 	PubKey         string    `json:"pubKey"`
 	RegisteredDate time.Time `json:"registeredDate"`
 	Access         int32     `json:"access"`
+	Blocks         int       `json:"blocks"`
 }
