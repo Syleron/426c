@@ -28,6 +28,8 @@ import (
 // TODO - Client/Server Version Validation
 // TODO - Pending messages for offline people
 // TODO - Prevent people from sending plain text
+// TODO - Proper Server -> Client error handling
+// TODO - Session timeout
 
 // Username -> keys
 // Store keys with server
