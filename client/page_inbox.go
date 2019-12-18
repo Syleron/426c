@@ -21,8 +21,8 @@ func InboxPage() (id string, content tview.Primitive) {
 	userGrid :=  tview.NewFlex()
 	chatGrid :=  tview.NewFlex()
 
-	userGrid.SetBorder(true)
-	userGrid.SetBorderPadding(1,1,1,1,)
+	//userGrid.SetBorder(true)
+	//userGrid.SetBorderPadding(1,1,1,1,)
 
 	chatGrid.SetBorder(true)
 	chatGrid.SetBorderPadding(1,1,1,1)
@@ -39,6 +39,9 @@ func InboxPage() (id string, content tview.Primitive) {
 	//messageContainer.SetBorder(true)
 
 	userListContainer = tview.NewTable()
+	userListContainer.SetBorder(true)
+	userListContainer.SetBorderPadding(1,1,1,1)
+
 		//SetFixed(1, 1)
 		//SetDynamicColors(true).
 		//SetRegions(true).
