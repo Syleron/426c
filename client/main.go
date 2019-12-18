@@ -34,7 +34,7 @@ func footer() *tview.TextView {
 		SetTextAlign(tview.AlignRight).
 		SetWrap(false)
 
-	fmt.Fprintf(foot, "Connected ")
+	fmt.Fprintf(foot, "Connected <")
 
 	return foot
 }

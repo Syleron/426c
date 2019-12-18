@@ -124,6 +124,11 @@ func (c *Client) msgLogin(username string, password string) error {
 	return nil
 }
 
+func (c *Client) msgSearch(username string) error {
+
+	return nil
+}
+
 func (c *Client) msgReqShareKey() {}
 
 func (c *Client) msgEncShareKey() {}

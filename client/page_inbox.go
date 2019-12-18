@@ -21,6 +21,12 @@ func InboxPage() (id string, content tview.Primitive) {
 	userGrid :=  tview.NewFlex()
 	chatGrid :=  tview.NewFlex()
 
+	userGrid.SetBorder(true)
+	userGrid.SetBorderPadding(1,1,1,1,)
+
+	chatGrid.SetBorder(true)
+	chatGrid.SetBorderPadding(1,1,1,1)
+
 	messageContainer = tview.NewTextView().
 		SetDynamicColors(true).
 		SetRegions(true).
@@ -30,6 +36,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		})
 
 	messageContainer.SetScrollable(true)
+	//messageContainer.SetBorder(true)
 
 	userListContainer = tview.NewTable().
 		SetFixed(1, 1)
@@ -40,9 +47,8 @@ func InboxPage() (id string, content tview.Primitive) {
 		//	app.Draw()
 		//})
 
-	userListContainer.SetCell(0, 0, tview.NewTableCell("testing"))
-	userListContainer.SetCell(1, 0, tview.NewTableCell("testing"))
-	userListContainer.SetCell(2, 0, tview.NewTableCell("testing"))
+	userListContainer.SetCell(0, 0, tview.NewTableCell("Willifer (Online)"))
+	userListContainer.SetCell(1, 0, tview.NewTableCell("Haroto (Offline)"))
 
 	inputField = tview.NewInputField().
 		SetPlaceholder("Send message...").
@@ -64,7 +70,7 @@ func InboxPage() (id string, content tview.Primitive) {
 			}
 		})
 
-	button := tview.NewButton("Compose").SetSelectedFunc(func() {
+	button := tview.NewButton("Search Users").SetSelectedFunc(func() {
 		pages.SwitchToPage("search")
 	})
 	button.SetBorder(true).SetRect(0, 0, 0, 1)

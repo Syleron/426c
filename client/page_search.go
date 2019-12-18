@@ -40,7 +40,8 @@ func SearchPage() (id string, content tview.Primitive) {
 	form = tview.NewForm().
 		AddInputField("Search", "", 20, nil, nil).
 		AddButton("Submit", func() {
-			app.SetFocus(table)
+			// Search
+			//app.SetFocus(table)
 		}).
 		AddButton("Cancel", func() {
 			pages.SwitchToPage("inbox")

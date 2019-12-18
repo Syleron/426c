@@ -36,6 +36,9 @@ import (
 type Server struct {
 	listener net.Listener
 	clients map[string]*Client
+
+	// The cost to send a message through the 426c network
+	msgCost int
 }
 
 func setupServer(laddr string) *Server {
@@ -105,6 +108,8 @@ func (s *Server) commandRouter(client *Client, packet []byte) {
 	case cmd == plib.CMD_REGISTER:
 		log.Debug("Message register command")
 		s.cmdRegister(client, packet[1:])
+	case cmd == plib.CMD_SEARCH:
+
 	case cmd == plib.CMD_MSGALL:
 		log.Debug("Message all command")
 		s.cmdMsgAll(client, packet[1:])

@@ -18,6 +18,7 @@ const (
 	CMD_LEAVECLUB
 	CMD_REGISTER
 	CMD_LOGIN
+	CMD_SEARCH
 
 	// Server Responses
 	SVR_NOTICE
