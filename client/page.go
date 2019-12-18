@@ -9,6 +9,7 @@ var (
 		RegisterPage,
 		RegisterWarningPage,
 		InboxPage,
+		SearchPage,
 	}
 )
 

@@ -27,6 +27,7 @@ import (
 // TODO - Increase the cost of blocks depending on total number of spam (Calculate the rate of messaging for a particular room)
 // TODO - Client/Server Version Validation
 // TODO - Pending messages for offline people
+// TODO - Prevent people from sending plain text
 
 // Username -> keys
 // Store keys with server
@@ -122,7 +123,7 @@ func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
 	var registerObj models.RegisterModel
 	if err := json.Unmarshal(packet, &registerObj); err != nil {
 		log.Debug("unable to unmarshal packet")
-		return 1, err
+		return 1, nil
 	}
 	user := &models.User{
 		Username:       registerObj.Username,
@@ -135,7 +136,7 @@ func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
 	// Register our user
 	if err := userAdd(user); err != nil {
 		log.Debug(err)
-		return 2, err
+		return 2, nil
 	}
 	return 0, nil
 }
@@ -144,18 +145,18 @@ func (s *Server) cmdLogin(client *Client, packet []byte) (int, error) {
 	var loginObj models.LoginModel
 	if err := json.Unmarshal(packet, &loginObj); err != nil {
 		log.Debug("unable to unmarshal packet")
-		return 1, err
+		return 1, nil
 	}
 	// compare login credentials
 	user, err := userGet(loginObj.Username)
 	if err != nil {
 		log.Debug("unable to find user account")
-		return 2, err
+		return 2, nil
 	}
 	// Compare credentials
 	if user.PassHash != loginObj.Password {
 		log.Debug("invalid login password")
-		return 3, err
+		return 3, nil
 	}
 	return 0, nil
 }

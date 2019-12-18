@@ -17,3 +17,7 @@ func (c *Client) Send(cmdType int, buf []byte) (int, error) {
 func (c *Client) SendNotice(msg string) (int, error) {
 	return c.Conn.Write(packet.PacketForm(byte(packet.SVR_NOTICE), []byte(msg)))
 }
+
+func (c *Client) LoggedIn() bool {
+	return c.Username != ""
+}

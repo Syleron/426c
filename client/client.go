@@ -93,7 +93,8 @@ func (c *Client) msgRegister(username string, password string) error {
 		panic(err)
 	}
 	// Send our username, hash remainder, encrypted private key, and readable public key.
-	_, err = c.Send(plib.CMD_REGISTER, b)
+	i, err := c.Send(plib.CMD_REGISTER, b)
+	panic(i)
 	if err != nil {
 		return err
 	}

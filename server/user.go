@@ -34,6 +34,8 @@ func userAdd(u *models.User) error {
 	})
 }
 
+func userDelete() {}
+
 func userGet(username string) (models.User, error) {
 	var user models.User
 	var ub []byte
