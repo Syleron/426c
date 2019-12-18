@@ -38,8 +38,8 @@ func InboxPage() (id string, content tview.Primitive) {
 	messageContainer.SetScrollable(true)
 	//messageContainer.SetBorder(true)
 
-	userListContainer = tview.NewTable().
-		SetFixed(1, 1)
+	userListContainer = tview.NewTable()
+		//SetFixed(1, 1)
 		//SetDynamicColors(true).
 		//SetRegions(true).
 		//SetWordWrap(true).
