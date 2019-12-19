@@ -24,6 +24,9 @@ const (
 	SVR_NOTICE
 	SVR_MSG
 	SVR_VERSION
+	SVR_LOGIN
+	SVR_REGISTER
+	SVR_ERROR
 )
 
 const HEADER_BYTE byte = '\xde'

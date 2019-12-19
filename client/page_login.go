@@ -28,7 +28,6 @@ func LoginPage() (id string, content tview.Primitive) {
 		if err := client.msgLogin(username, password); err != nil {
 			panic(err)
 		}
-		pages.SwitchToPage("inbox")
 	}).
 		AddButton("Register", func() {
 			pages.SwitchToPage("register warning")

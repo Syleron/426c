@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/syleron/426c/common/models"
 	plib "github.com/syleron/426c/common/packet"
+	"github.com/syleron/426c/common/utils"
 	"net"
 	"os"
 	"time"
@@ -89,6 +90,9 @@ func (s *Server) newClient(conn net.Conn) {
 	}
 	br := bufio.NewReader(client.Conn)
 	packet, err := plib.PacketRead(br)
+	if err != nil {
+		log.Error(err)
+	}
 	// Handle initial request
 	s.commandRouter(client, packet)
 	// Handle subsequent requests
@@ -127,7 +131,7 @@ func (s *Server) commandRouter(client *Client, packet []byte) {
 }
 
 func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
-	var registerObj models.RegisterModel
+	var registerObj models.RegisterRequestModel
 	if err := json.Unmarshal(packet, &registerObj); err != nil {
 		log.Debug("unable to unmarshal packet")
 		return 1, nil
@@ -148,24 +152,35 @@ func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
 	return 0, nil
 }
 
-func (s *Server) cmdLogin(client *Client, packet []byte) (int, error) {
-	var loginObj models.LoginModel
-	if err := json.Unmarshal(packet, &loginObj); err != nil {
+func (s *Server) cmdLogin(c *Client, p []byte) {
+	var loginObj models.LoginRequestModel
+	if err := json.Unmarshal(p, &loginObj); err != nil {
 		log.Debug("unable to unmarshal packet")
-		return 1, nil
+		return
 	}
 	// compare login credentials
 	user, err := userGet(loginObj.Username)
 	if err != nil {
 		log.Debug("unable to find user account")
-		return 2, nil
+		c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
+			Success: false,
+			Message: "unable to find user account",
+		}))
+		return
 	}
 	// Compare credentials
 	if user.PassHash != loginObj.Password {
 		log.Debug("invalid login password")
-		return 3, nil
+		c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
+			Success: false,
+			Message: "invalid user account",
+		}))
+		return
 	}
-	return 0, nil
+	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
+		Success: true,
+		Message: "success",
+	}))
 }
 
 func (s *Server) cmdMsgAll(client *Client, packet []byte) (int, error) {

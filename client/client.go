@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"crypto/rand"
 	"crypto/tls"
-	"encoding/json"
-	"fmt"
 	gopenpgp "github.com/ProtonMail/gopenpgp/crypto"
 	"github.com/syleron/426c/common/models"
 	plib "github.com/syleron/426c/common/packet"
+	"github.com/syleron/426c/common/utils"
 	"net"
+	"strings"
 )
 
 type Client struct {
@@ -52,7 +52,8 @@ func (c *Client) connectionHandler() {
 		if err != nil {
 			break
 		}
-		fmt.Println(string(p[1:]))
+		panic(string(p[1:]))
+		//fmt.Println(string(p[1:]))
 	}
 }
 
@@ -75,30 +76,40 @@ func (c *Client) msgRegister(username string, password string) error {
 	if err != nil {
 		panic(err)
 	}
+	keyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(rsaKey))
+	if err != nil {
+		panic(err)
+	}
+	publicKey, err := keyRing.GetArmoredPublicKey()
+	if err != nil {
+		panic(err)
+	}
 	// Encrypt our private RSA key
 	encryptedKey, err := encryptRSA([]byte(rsaKey), []byte(hashRemainder), []byte(hashKey))
 	if err != nil {
 		panic(err)
 	}
 	// Create our object to send
-	registerObject := &models.RegisterModel{
+	registerObject := &models.RegisterRequestModel{
 		Username:   username,
 		PassHash:    hashRemainder,
 		EncPrivKey: encryptedKey,
-		PubKey:     "",
-	}
-	// Convert our object to a json byte array to send
-	b, err := json.Marshal(registerObject)
-	if err != nil {
-		panic(err)
+		PubKey:     publicKey,
 	}
 	// Send our username, hash remainder, encrypted private key, and readable public key.
-	i, err := c.Send(plib.CMD_REGISTER, b)
+	i, err := c.Send(
+		plib.CMD_REGISTER,
+		utils.MarshalResponse(registerObject),
+	)
 	panic(i)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (c *Client) svrRegister() error {
+
 }
 
 func (c *Client) msgLogin(username string, password string) error {
@@ -107,20 +118,23 @@ func (c *Client) msgLogin(username string, password string) error {
 	// Calculate hash remainder
 	hashRemainder := hashString[32:48]
 	// Create our object to send
-	registerObject := &models.LoginModel{
+	registerObject := &models.LoginRequestModel{
 		Username:   username,
 		Password: hashRemainder,
 	}
-	// Convert our object to a json byte array to send
-	b, err := json.Marshal(registerObject)
-	if err != nil {
-		panic(err)
-	}
 	// Send our username, hash remainder.
-	_, err = c.Send(plib.CMD_LOGIN, b)
+	_, err := c.Send(
+		plib.CMD_LOGIN,
+		utils.MarshalResponse(registerObject),
+	)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (c *Client) svrLogin(p []byte) error {
+
 	return nil
 }
 

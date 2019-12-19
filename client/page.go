@@ -10,6 +10,7 @@ var (
 		RegisterWarningPage,
 		InboxPage,
 		SearchPage,
+		ComposePage,
 	}
 )
 

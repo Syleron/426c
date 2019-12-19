@@ -1,6 +1,11 @@
 package models
 
-type LoginModel struct {
+type LoginRequestModel struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type LoginResponseModel struct {
+	Success bool `json:"success"`
+	Message string `json:"message"`
 }

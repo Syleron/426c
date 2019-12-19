@@ -6,12 +6,13 @@ import (
 )
 
 var	(
-	messageContainer *tview.TextView
-	userListContainer *tview.Table
-	inputField *tview.InputField
+	composeMessageContainer *tview.TextView
+	composeUserListContainer *tview.Table
+	composeMessageField *tview.InputField
+	composeToField *tview.InputField
 )
 
-func InboxPage() (id string, content tview.Primitive) {
+func ComposePage() (id string, content tview.Primitive) {
 	grid := tview.NewGrid().
 		SetRows(1).
 		SetColumns(30, 0).
@@ -27,7 +28,7 @@ func InboxPage() (id string, content tview.Primitive) {
 	chatGrid.SetBorder(true)
 	chatGrid.SetBorderPadding(1,1,1,1)
 
-	messageContainer = tview.NewTextView().
+	composeMessageContainer = tview.NewTextView().
 		SetDynamicColors(true).
 		SetRegions(true).
 		SetWordWrap(true).
@@ -35,25 +36,10 @@ func InboxPage() (id string, content tview.Primitive) {
 			app.Draw()
 		})
 
-	messageContainer.SetScrollable(true)
+	composeMessageContainer.SetScrollable(true)
 	//messageContainer.SetBorder(true)
 
-	userListContainer = tview.NewTable()
-	userListContainer.SetBorder(true)
-	userListContainer.SetBorderPadding(1,1,1,1)
-
-		//SetFixed(1, 1)
-		//SetDynamicColors(true).
-		//SetRegions(true).
-		//SetWordWrap(true).
-		//SetChangedFunc(func() {
-		//	app.Draw()
-		//})
-
-	userListContainer.SetCell(0, 0, tview.NewTableCell("Willifer (Online)"))
-	userListContainer.SetCell(1, 0, tview.NewTableCell("Haroto (Offline)"))
-
-	inputField = tview.NewInputField().
+	composeMessageField = tview.NewInputField().
 		SetPlaceholder("Send message...").
 		//SetAcceptanceFunc(tview.InputFieldInteger).
 		SetDoneFunc(func(key tcell.Key) {
@@ -73,8 +59,8 @@ func InboxPage() (id string, content tview.Primitive) {
 			}
 		})
 
-	button := tview.NewButton("Compose").SetSelectedFunc(func() {
-		pages.SwitchToPage("search")
+	button := tview.NewButton("Cancel").SetSelectedFunc(func() {
+		pages.SwitchToPage("inbox")
 	})
 	button.SetBorder(true).SetRect(0, 0, 0, 1)
 
@@ -90,7 +76,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		AddItem(messageContainer, 0, 1, false).
 		AddItem(inputField, 1, 1, false), 0, 2, false)
 
-	messageContainer.SetScrollable(true)
+	composeMessageContainer.SetScrollable(true)
 
-	return "inbox", grid
+	return "compose", grid
 }
