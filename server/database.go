@@ -11,7 +11,7 @@ import (
 var db *bolt.DB
 
 func loadDatabase() error {
-	log.Debug("Loading database 426c.db")
+	log.Debug("loading database 426c.db")
 	var err error
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	db, err = bolt.Open(dir+"/426c.db", 0600, nil)
@@ -28,7 +28,7 @@ func bucketCreate(name string) error {
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
-		log.Debug("Created DB bucket ", name)
+		log.Debug("created DB bucket ", name)
 		return nil
 	})
 }

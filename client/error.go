@@ -8,6 +8,7 @@ type ClientError struct {
 	Continue func()
 }
 
+// TODO: Change this to show Modal so it has more than one use case
 func showError(mError ClientError) {
 	modal := tview.NewModal().
 		SetText(mError.Message).

@@ -45,11 +45,10 @@ func main() {
 		panic(err)
 	}
 	// Setup our socket client
-	client = setupClient()
+	var err error
+	client, err = setupClient()
 	// Defer our client close
 	defer client.Close()
-	// Put our handlers into a go rutine
-	go client.connectionHandler()
 	// Create the main layout
 	layout := tview.NewFlex().
 		SetDirection(tview.FlexRow).
@@ -60,6 +59,9 @@ func main() {
 	LoadPages()
 	// Input
 	InputHandlers()
+	if err != nil {
+		pages.SwitchToPage("unavailable")
+	}
 	// Start our main app loop
 	if err := app.SetRoot(layout, true).Run(); err != nil {
 		panic(err)

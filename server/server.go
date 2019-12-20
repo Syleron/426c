@@ -58,7 +58,7 @@ func setupServer(laddr string) *Server {
 	if err != nil {
 		panic(err)
 	}
-	log.Infof("Listening on port %v\n", port)
+	log.Infof("listening on port %v\n", port)
 	return &Server{
 		listener: listener,
 		clients: make(map[string]*Client),
@@ -105,36 +105,28 @@ func (s *Server) newClient(conn net.Conn) {
 	}
 }
 
-func (s *Server) commandRouter(client *Client, packet []byte) {
-	cmd := packet[0]
-	switch {
-	case cmd == plib.CMD_LOGIN:
-		log.Debug("Message login command")
-		s.cmdLogin(client, packet[1:])
-	case cmd == plib.CMD_REGISTER:
-		log.Debug("Message register command")
-		s.cmdRegister(client, packet[1:])
-	case cmd == plib.CMD_SEARCH:
-
-	case cmd == plib.CMD_MSGALL:
-		log.Debug("Message all command")
-		s.cmdMsgAll(client, packet[1:])
-	case cmd == plib.CMD_MSGTO:
-		log.Debug("Message to command")
-		s.cmdMsgTo(client, packet[1:])
-	case cmd == plib.CMD_WHO:
-		log.Debug("Message who command")
-		s.cmdWho(client)
+func (s *Server) commandRouter(c *Client, p []byte) {
+	if len(p) <= 0 {
+		log.Error("invalid packet ", p)
+		return
+	}
+	switch p[0] {
+	case plib.CMD_LOGIN:
+		log.Debug("message login command")
+		s.cmdLogin(c, p[1:])
+	case plib.CMD_REGISTER:
+		log.Debug("message register command")
+		s.cmdRegister(c, p[1:])
 	default:
-		log.Debug("Received unknown command")
+		log.Debug("received unknown command")
 	}
 }
 
-func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
+func (s *Server) cmdRegister(client *Client, packet []byte) {
 	var registerObj models.RegisterRequestModel
 	if err := json.Unmarshal(packet, &registerObj); err != nil {
 		log.Debug("unable to unmarshal packet")
-		return 1, nil
+		return
 	}
 	user := &models.User{
 		Username:       registerObj.Username,
@@ -147,9 +139,7 @@ func (s *Server) cmdRegister(client *Client, packet []byte) (int, error) {
 	// Register our user
 	if err := userAdd(user); err != nil {
 		log.Debug(err)
-		return 2, nil
 	}
-	return 0, nil
 }
 
 func (s *Server) cmdLogin(c *Client, p []byte) {

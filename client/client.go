@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"crypto/rand"
 	"crypto/tls"
+	"encoding/json"
+	"errors"
 	gopenpgp "github.com/ProtonMail/gopenpgp/crypto"
+	"github.com/labstack/gommon/log"
 	"github.com/syleron/426c/common/models"
 	plib "github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
@@ -18,7 +21,7 @@ type Client struct {
 	Conn   net.Conn
 }
 
-func setupClient() *Client {
+func setupClient() (*Client, error) {
 	// Setup our listener
 	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
@@ -33,13 +36,17 @@ func setupClient() *Client {
 	// TODO This should be a client command rather done automagically.
 	conn, err := tls.Dial("tcp", "127.0.0.1:9000", &config)
 	if err != nil {
-		panic(err)
+		return &Client{}, errors.New("unable to connect to host")
 	}
-	return &Client{
+	// Put our handlers into a go routine
+	c := &Client{
 		Writer: bufio.NewWriter(conn),
 		Reader: bufio.NewReader(conn),
 		Conn:   conn,
 	}
+	// Put our handlers into a go routine
+	go c.connectionHandler()
+	return c, nil
 }
 
 func (c *Client) Send(cmdType int, buf []byte) (int, error) {
@@ -52,8 +59,15 @@ func (c *Client) connectionHandler() {
 		if err != nil {
 			break
 		}
-		panic(string(p[1:]))
-		//fmt.Println(string(p[1:]))
+		c.commandRouter(p)
+	}
+}
+
+func (c *Client) commandRouter(p []byte) {
+	switch p[0] {
+	case plib.SVR_LOGIN:
+		c.svrLogin(p[1:])
+	default:
 	}
 }
 
@@ -109,10 +123,10 @@ func (c *Client) msgRegister(username string, password string) error {
 }
 
 func (c *Client) svrRegister() error {
-
+	return nil
 }
 
-func (c *Client) msgLogin(username string, password string) error {
+func (c *Client) msgLogin(username string, password string) {
 	// Generate password hash
 	hashString := hashPassword(password)
 	// Calculate hash remainder
@@ -128,14 +142,27 @@ func (c *Client) msgLogin(username string, password string) error {
 		utils.MarshalResponse(registerObject),
 	)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	return nil
 }
 
-func (c *Client) svrLogin(p []byte) error {
-
-	return nil
+func (c *Client) svrLogin(p []byte) {
+	var loginObj models.LoginResponseModel
+	if err := json.Unmarshal(p, &loginObj); err != nil {
+		log.Debug("unable to unmarshal packet")
+		return
+	}
+	if !loginObj.Success {
+		showError(ClientError{
+			Message:  loginObj.Message,
+			Button:   "Continue",
+			Continue: func() {
+				pages.SwitchToPage("login")
+			},
+		})
+		return
+	}
+	pages.SwitchToPage("inbox")
 }
 
 func (c *Client) msgSearch(username string) error {

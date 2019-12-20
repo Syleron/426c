@@ -11,6 +11,7 @@ var (
 		InboxPage,
 		SearchPage,
 		ComposePage,
+		UnavailablePage,
 	}
 )
 
