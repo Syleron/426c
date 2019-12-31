@@ -12,6 +12,7 @@ import (
 	plib "github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
 	"net"
+	"os"
 	"strings"
 )
 
@@ -57,7 +58,7 @@ func (c *Client) connectionHandler() {
 	for {
 		p, err := plib.PacketRead(c.Reader)
 		if err != nil {
-			break
+			os.Exit(1)
 		}
 		c.commandRouter(p)
 	}
@@ -71,7 +72,7 @@ func (c *Client) commandRouter(p []byte) {
 	}
 }
 
-func (c *Client) msgRegister(username string, password string) error {
+func (c *Client) msgRegister(username string, password string) {
 	var pgp = gopenpgp.GetGopenPGP()
 	// Generate password hash
 	hashString := hashPassword(password)
@@ -111,15 +112,13 @@ func (c *Client) msgRegister(username string, password string) error {
 		PubKey:     publicKey,
 	}
 	// Send our username, hash remainder, encrypted private key, and readable public key.
-	i, err := c.Send(
+	_, err = c.Send(
 		plib.CMD_REGISTER,
 		utils.MarshalResponse(registerObject),
 	)
-	panic(i)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	return nil
 }
 
 func (c *Client) svrRegister() error {

@@ -93,7 +93,7 @@ func (s *Server) newClient(conn net.Conn) {
 	if err != nil {
 		log.Error(err)
 	}
-	// Handle initial request
+	//// Handle initial request
 	s.commandRouter(client, packet)
 	// Handle subsequent requests
 	for {
@@ -102,6 +102,7 @@ func (s *Server) newClient(conn net.Conn) {
 			log.Error(err)
 			break
 		}
+		s.commandRouter(client, packet)
 	}
 }
 
