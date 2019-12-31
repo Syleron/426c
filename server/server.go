@@ -36,12 +36,13 @@ import (
 // Store keys with server
 //
 
+
+// Total Chat's per second (TCS) / total number of users
+// For example 1 / 10 = 0.10 *
+
 type Server struct {
 	listener net.Listener
 	clients map[string]*Client
-
-	// The cost to send a message through the 426c network
-	msgCost int
 }
 
 func setupServer(laddr string) *Server {
