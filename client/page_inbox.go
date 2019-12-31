@@ -74,6 +74,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		})
 
 	button := tview.NewButton("Compose").SetSelectedFunc(func() {
+		creditBlocks(12)
 		pages.SwitchToPage("search")
 	})
 	button.SetBorder(true).SetRect(0, 0, 0, 1)

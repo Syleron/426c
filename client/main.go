@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/security"
+	"strconv"
+	"time"
 )
 
 var (
@@ -34,7 +36,14 @@ func footer() *tview.TextView {
 		SetTextAlign(tview.AlignRight).
 		SetWrap(false)
 
-	fmt.Fprintf(foot, " [_] 3564 Blocks | Connected ")
+	// Do it first
+	fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " | Connected ")
+	// Then update every 2 seconds
+	go doEvery(2 * time.Second, func() error {
+		foot.Clear()
+		fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " | Connected ")
+		return nil
+	})
 
 	return foot
 }

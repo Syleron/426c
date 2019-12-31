@@ -6,6 +6,8 @@ type LoginRequestModel struct {
 }
 
 type LoginResponseModel struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
 	Message string `json:"message"`
+	Blocks  int    `json:"blocks"`
+	MsgCost int    `json:"msgCost"`
 }
