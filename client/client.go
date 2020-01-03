@@ -134,6 +134,7 @@ func (c *Client) msgLogin(username string, password string) {
 	registerObject := &models.LoginRequestModel{
 		Username:   username,
 		Password: hashRemainder,
+		Version: VERSION,
 	}
 	// Send our username, hash remainder.
 	_, err := c.Send(

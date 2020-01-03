@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"time"
 )
 
@@ -14,11 +13,12 @@ var (
 
 	// How often to distribute the block total
 	distBlockPeriod time.Duration
+
 	// Total amount to be distributed per time period
 	distBlockTotal float32
 )
 
 func calcBlockCost(n int) int {
-	t := math.Round(TCSCount / n)
-	return TCSCount / n
+	//t := math.Round(TCSCount / n)
+	return 0//TCSCount / n
 }

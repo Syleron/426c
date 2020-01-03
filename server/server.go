@@ -150,6 +150,15 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		log.Debug("unable to unmarshal packet")
 		return
 	}
+	// Check version
+	if loginObj.Version != VERSION {
+		log.Debug("client version mismatch")
+		c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
+			Success: false,
+			Message: "Version mismatch. Please make sure you are running the latest version.",
+		}))
+		return
+	}
 	// compare login credentials
 	user, err := userGet(loginObj.Username)
 	if err != nil {

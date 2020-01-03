@@ -50,8 +50,8 @@ func InboxPage() (id string, content tview.Primitive) {
 		//	app.Draw()
 		//})
 
-	userListContainer.SetCell(0, 0, tview.NewTableCell("Willifer (Online)"))
-	userListContainer.SetCell(1, 0, tview.NewTableCell("Haroto (Offline)"))
+	//userListContainer.SetCell(0, 0, tview.NewTableCell("Willifer (Online)"))
+	//userListContainer.SetCell(1, 0, tview.NewTableCell("Haroto (Offline)"))
 
 	inputField = tview.NewInputField().
 		SetPlaceholder("Send message...").
@@ -73,18 +73,34 @@ func InboxPage() (id string, content tview.Primitive) {
 			}
 		})
 
-	button := tview.NewButton("Compose").SetSelectedFunc(func() {
+	composeButton := tview.NewButton("Compose").SetSelectedFunc(func() {
 		creditBlocks(12)
-		pages.SwitchToPage("search")
+		pages.SwitchToPage("compose")
 	})
-	button.SetBorder(true).SetRect(0, 0, 0, 1)
+	composeButton.SetBorder(true).SetRect(0, 0, 0, 1)
+
+	composeButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyTAB:
+			app.SetFocus(userListContainer)
+		}
+		return event
+	})
+
+	userListContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyTAB:
+			app.SetFocus(composeButton)
+		}
+		return event
+	})
 
 	// Layout for screens wider than 100 cells.
 	grid.AddItem(userGrid, 1, 0, 1, 1, 0, 100, true).
 		AddItem(chatGrid, 1, 1, 1, 1, 0, 100, false)
 
 	userGrid.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(button, 3, 1, true).
+		AddItem(composeButton, 3, 1, true).
 		AddItem(userListContainer, 0, 1, true), 0, 2, true)
 
 	chatGrid.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).

@@ -33,7 +33,7 @@ func LoginPage() (id string, content tview.Primitive) {
 		AddButton("Exit", func() {
 			app.Stop()
 		})
-	form.SetBorder(true).SetTitle("426c Login")
+	form.SetBorder(true).SetTitle(" 426c Login ")
 
 	return "login", Center(40, 10, form)
 }

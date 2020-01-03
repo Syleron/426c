@@ -3,6 +3,7 @@ package models
 type LoginRequestModel struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Version  string    `json:"version"`
 }
 
 type LoginResponseModel struct {

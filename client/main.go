@@ -42,6 +42,7 @@ func footer() *tview.TextView {
 	go doEvery(2 * time.Second, func() error {
 		foot.Clear()
 		fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " | Connected ")
+		app.Draw()
 		return nil
 	})
 
