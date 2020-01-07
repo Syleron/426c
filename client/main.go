@@ -22,7 +22,7 @@ func header() *tview.TextView {
 		SetRegions(true).
 		SetWrap(false)
 
-	fmt.Fprintf(head, `[:bu]░ [yellow]426c [white]Network`)
+	fmt.Fprintf(head, `[:bu]░ [yellow]426c [white]Network `)
 
 	return head
 }
@@ -35,11 +35,11 @@ func footer() *tview.TextView {
 		SetWrap(false)
 
 	// Do it first
-	fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " | [green]Connected ")
+	fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " ")
 	// Then update every 2 seconds
 	go doEvery(2 * time.Second, func() error {
 		foot.Clear()
-		fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " | [green]Connected ")
+		fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " ")
 		app.Draw()
 		return nil
 	})

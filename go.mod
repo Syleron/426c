@@ -10,7 +10,9 @@ require (
 	github.com/ipfs/go-log v1.0.0
 	github.com/labstack/gommon v0.3.0
 	github.com/mattn/go-runewidth v0.0.7 // indirect
+	github.com/pgavlin/femto v0.0.0-20191028012355-31a9964a50b5 // indirect
 	github.com/rivo/tview v0.0.0-20191129065140-82b05c9fb329
+	github.com/syleron/femto v0.0.0-20200107145753-dbb5f68c6b58
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
 )
 

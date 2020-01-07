@@ -109,7 +109,7 @@ func (s *Server) newClient(conn net.Conn) {
 
 func (s *Server) commandRouter(c *Client, p []byte) {
 	if len(p) <= 0 {
-		log.Error("invalid packet ", p)
+		log.Error("invalid packet", p)
 		return
 	}
 	switch p[0] {
@@ -165,7 +165,7 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		log.Debug("unable to find user account")
 		c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 			Success: false,
-			Message: "unable to find user account",
+			Message: "Unable to find user account",
 		}))
 		return
 	}
@@ -174,7 +174,7 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		log.Debug("invalid login password")
 		c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 			Success: false,
-			Message: "invalid user account",
+			Message: "Invalid user account",
 		}))
 		return
 	}

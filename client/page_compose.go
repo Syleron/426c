@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"github.com/syleron/femto"
 )
 
 var	(
@@ -37,26 +38,9 @@ func ComposePage() (id string, content tview.Primitive) {
 		})
 
 	messageContainer.SetScrollable(true)
-	//messageContainer.SetBorder(true)
 
-	//SetFixed(1, 1)
-	//SetDynamicColors(true).
-	//SetRegions(true).
-	//SetWordWrap(true).
-	//SetChangedFunc(func() {
-	//	app.Draw()
-	//})
-
-	inputField := tview.NewTextView().
-		SetText("\n\n------\nThis is an encrypted message sent via 426c").
-		SetDynamicColors(true).
-		SetRegions(true).
-		SetWordWrap(true).
-		SetChangedFunc(func() {
-			if inputField.HasFocus() {
-				app.Draw()
-			}
-		})
+	buffer := femto.NewBufferFromString("\n\n------\nThis is an encrypted message sent via 426c", "")
+	inputField := femto.NewView(buffer)
 
 	toInputField := tview.NewInputField().
 		SetPlaceholder("Enter username")
@@ -70,6 +54,18 @@ func ComposePage() (id string, content tview.Primitive) {
 		pages.SwitchToPage("inbox")
 	})
 	sendButton.SetBorder(true).SetRect(0, 0, 0, 1)
+
+	inputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlS:
+			//saveBuffer(buffer, path)
+			return nil
+		case tcell.KeyCtrlQ:
+			//app.Stop()
+			return nil
+		}
+		return event
+	})
 
 	toInputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
