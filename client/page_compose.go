@@ -123,3 +123,7 @@ func ComposePage() (id string, content tview.Primitive) {
 
 	return "compose", grid
 }
+
+func submitMessage(toUser string, message string) {
+
+}

@@ -121,7 +121,21 @@ func (c *Client) msgRegister(username string, password string) {
 	}
 }
 
-func (c *Client) svrRegister() error {
+func (c *Client) svrRegister(p []byte) error {
+	var regObj models.RegisterResponseModel
+	if err := json.Unmarshal(p, &regObj); err != nil {
+		panic("unable to unmarshal packet")
+	}
+	if !regObj.Success {
+		showError(ClientError{
+			Message:  regObj.Message,
+			Button:   "Continue",
+			Continue: func() {
+				pages.SwitchToPage("login")
+			},
+		})
+		return
+	}
 	return nil
 }
 
@@ -164,26 +178,5 @@ func (c *Client) svrLogin(p []byte) {
 	}
 	pages.SwitchToPage("inbox")
 }
-
-func (c *Client) msgSearch(username string) error {
-
-	return nil
-}
-
-func (c *Client) msgReqShareKey() {}
-
-func (c *Client) msgEncShareKey() {}
-
-func (c *Client) msgSendShareKey() {}
-
-func (c *Client) msgReqPubKey() {}
-
-func (c *Client) msgSendPubKey() {}
-
-func (c *Client) msgEncPubKey() {}
-
-func (c *Client) ident() {}
-
-func (c *Client) who() {}
 
 func (c *Client) Close() {}
