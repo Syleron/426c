@@ -3,14 +3,17 @@ package main
 import (
 	"fmt"
 	"github.com/labstack/gommon/log"
+	"github.com/syleron/426c/common/database"
 	"github.com/syleron/426c/common/security"
 )
 
 var (
 	port = 9000
+	db *database.Database
 )
 
 func main() {
+	var err error
 	fmt.Println(`
   ____ ___  ____    
  / / /|_  |/ __/____
@@ -19,9 +22,12 @@ func main() {
 	// Set our logging level
 	log.SetLevel(1) // 1) DEBUG 2) INFO
 	// Load our database
-	if err := loadDatabase(); err != nil {
+	db, err = database.New("426c")
+	if err != nil {
 		panic(err)
 	}
+	// Make sure we have our users bucket
+	db.CreateBucket("users")
 	// Generate new RSA keys
 	if err := security.GenerateKeys("127.0.0.1"); err != nil {
 		panic(err)

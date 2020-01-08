@@ -25,7 +25,7 @@ func LoginPage() (id string, content tview.Primitive) {
 				return
 			}
 		// Submit our registration to the server
-		client.msgLogin(username, password)
+		client.cmdLogin(username, password)
 	}).
 		AddButton("Register", func() {
 			pages.SwitchToPage("register warning")

@@ -72,7 +72,7 @@ func (c *Client) commandRouter(p []byte) {
 	}
 }
 
-func (c *Client) msgRegister(username string, password string) {
+func (c *Client) cmdRegister(username string, password string) {
 	var pgp = gopenpgp.GetGopenPGP()
 	// Generate password hash
 	hashString := hashPassword(password)
@@ -134,12 +134,12 @@ func (c *Client) svrRegister(p []byte) error {
 				pages.SwitchToPage("login")
 			},
 		})
-		return
+		return nil
 	}
 	return nil
 }
 
-func (c *Client) msgLogin(username string, password string) {
+func (c *Client) cmdLogin(username string, password string) {
 	// Generate password hash
 	hashString := hashPassword(password)
 	// Calculate hash remainder
@@ -178,5 +178,30 @@ func (c *Client) svrLogin(p []byte) {
 	}
 	pages.SwitchToPage("inbox")
 }
+
+// cmdMsgTo - Send a private encrypted message to a particular user
+// Process:
+// 1) Send cmd_user request in attempt to ensure user exists.
+// 2)
+func (c *Client) cmdMsgTo(username string, message string) {
+	//msgToObj := &models.MsgRequestModel{
+	//	Message: "",
+	//	From:    "",
+	//	To:      "",
+	//	Date:    time.Now(),
+	//}
+	_, err := c.Send(plib.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
+		Username: username,
+	}))
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *Client) svrMsgTo() {
+
+}
+
+
 
 func (c *Client) Close() {}

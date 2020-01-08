@@ -51,7 +51,7 @@ func ComposePage() (id string, content tview.Primitive) {
 	cancelButton.SetBorder(true).SetRect(0, 0, 0, 1)
 
 	sendButton := tview.NewButton("Send Message").SetSelectedFunc(func() {
-		pages.SwitchToPage("inbox")
+		client.cmdMsgTo(toInputField.GetText(), buffer.String())
 	})
 	sendButton.SetBorder(true).SetRect(0, 0, 0, 1)
 

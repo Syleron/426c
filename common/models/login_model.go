@@ -1,14 +1,14 @@
 package models
 
 type LoginRequestModel struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Version  string    `json:"version"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	Version  string `json:"version,omitempty"`
 }
 
 type LoginResponseModel struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Blocks  int    `json:"blocks"`
-	MsgCost int    `json:"msgCost"`
+	Success bool   `json:"success,omitempty"`
+	Message string `json:"message,omitempty"`
+	Blocks  int    `json:"blocks,omitempty"`
+	MsgCost int    `json:"msgCost,omitempty"`
 }

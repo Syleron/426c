@@ -2,13 +2,10 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/rand"
 	"crypto/tls"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/labstack/gommon/log"
 	"github.com/syleron/426c/common/models"
 	plib "github.com/syleron/426c/common/packet"
@@ -119,14 +116,31 @@ func (s *Server) commandRouter(c *Client, p []byte) {
 	case plib.CMD_REGISTER:
 		log.Debug("message register command")
 		s.cmdRegister(c, p[1:])
+	case plib.CMD_USER:
+		s.cmdUser(c, p[1:])
 	default:
 		log.Debug("received unknown command")
 	}
 }
 
-func (s *Server) cmdRegister(client *Client, packet []byte) {
+func (s *Server) cmdUser(c *Client, p []byte) {
+	var userObj models.UserRequestModel
+	if err := json.Unmarshal(p, &userObj); err != nil {
+		log.Debug("unable to unmarshal packet")
+		return
+	}
+	// Get our user from our users bucket
+	user, err := userGet(userObj.Username)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Debug(user.Username)
+}
+
+func (s *Server) cmdRegister(c *Client, p []byte) {
 	var registerObj models.RegisterRequestModel
-	if err := json.Unmarshal(packet, &registerObj); err != nil {
+	if err := json.Unmarshal(p, &registerObj); err != nil {
 		log.Debug("unable to unmarshal packet")
 		return
 	}
@@ -184,92 +198,92 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 	}))
 }
 
-func (s *Server) cmdMsgAll(client *Client, packet []byte) (int, error) {
-	// Make sure we have a valid username set
-	if client.Username == "" {
-		_, err := client.SendNotice("please register yourself with the server")
-		if err != nil {
-			log.Error(err)
-		}
-		return -1, nil
-	}
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.BigEndian, uint16(len(client.Username)))
-	buf.Write([]byte(client.Username))
-	buf.Write(packet)
-	// Broadcast the message to everyone
-	s.broadcast(plib.SVR_MSG, buf.Bytes())
-	// Return success
-	return 0, nil
-}
+//func (s *Server) cmdMsgAll(client *Client, p []byte) (int, error) {
+//	// Make sure we have a valid username set
+//	if client.Username == "" {
+//		_, err := client.SendNotice("please register yourself with the server")
+//		if err != nil {
+//			log.Error(err)
+//		}
+//		return -1, nil
+//	}
+//	var buf bytes.Buffer
+//	binary.Write(&buf, binary.BigEndian, uint16(len(client.Username)))
+//	buf.Write([]byte(client.Username))
+//	buf.Write(packet)
+//	// Broadcast the message to everyone
+//	s.broadcast(plib.SVR_MSG, buf.Bytes())
+//	// Return success
+//	return 0, nil
+//}
 
-func (s *Server) cmdMsgTo(client *Client, packet []byte) (int, error) {
-	// Make sure we have a valid username set
-	if client.Username == "" {
-		_, err := client.SendNotice("please register yourself with the server")
-		if err != nil {
-			log.Error(err)
-		}
-		return -1, nil
-	}
-	targetlen := int(binary.BigEndian.Uint16(packet[0:2]))
-	target := string(packet[2:2+targetlen])
-	data := packet[2+targetlen:]
-	targetClient, exists := s.clients[target]
-	if !exists {
-		c, err := client.SendNotice(fmt.Sprintf("unknown recipient %s", target))
-		if err != nil {
-			return c, err
-		}
-		return -1, nil
-	}
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.BigEndian, uint16(len(client.Username)))
-	buf.Write([]byte(client.Username))
-	buf.Write(data)
-	return targetClient.Send(plib.SVR_MSG, buf.Bytes())
-}
-
-func (s *Server) cmdIdent(client *Client, packet []byte) bool {
-	username := string(packet)
-	// Make sure our we have a valid username length
-	if len(username) > plib.MAX_NAME_LENGTH {
-		_, err := client.SendNotice("username is too long")
-		if err != nil {
-			log.Error(err)
-			return false
-		}
-	}
-	// Add our new client to our map
-	if err := s.clientAdd(username, client); err != nil {
-		log.Error(err)
-		return false
-	}
-	// Set our username for our client connection
-	client.Username = username
-	// Let everyone know that we have connected
-	s.broadcast(plib.SVR_NOTICE, []byte(username + " connected"))
-	return true
-}
-
-func (s *Server) cmdWho(client *Client) {
-	log.Debug("WHO command requested")
-	if client.Username == "" {
-		_, err := client.SendNotice("please register yourself with the server")
-		if err != nil {
-			log.Error(err)
-		}
-		return
-	}
-	msg := fmt.Sprintf("Who (%v users):\n", len(s.clients))
-	for username, _ := range s.clients {
-		msg += fmt.Sprintf(" %v\n", username)
-	}
-	_, err := client.SendNotice(msg)
-	if err != nil {
-		log.Error(err)
-	}
-}
+//func (s *Server) cmdMsgTo(client *Client, packet []byte) (int, error) {
+//	// Make sure we have a valid username set
+//	if client.Username == "" {
+//		_, err := client.SendNotice("please register yourself with the server")
+//		if err != nil {
+//			log.Error(err)
+//		}
+//		return -1, nil
+//	}
+//	targetlen := int(binary.BigEndian.Uint16(packet[0:2]))
+//	target := string(packet[2:2+targetlen])
+//	data := packet[2+targetlen:]
+//	targetClient, exists := s.clients[target]
+//	if !exists {
+//		c, err := client.SendNotice(fmt.Sprintf("unknown recipient %s", target))
+//		if err != nil {
+//			return c, err
+//		}
+//		return -1, nil
+//	}
+//	var buf bytes.Buffer
+//	binary.Write(&buf, binary.BigEndian, uint16(len(client.Username)))
+//	buf.Write([]byte(client.Username))
+//	buf.Write(data)
+//	return targetClient.Send(plib.SVR_MSG, buf.Bytes())
+//}
+//
+//func (s *Server) cmdIdent(client *Client, packet []byte) bool {
+//	username := string(packet)
+//	// Make sure our we have a valid username length
+//	if len(username) > plib.MAX_NAME_LENGTH {
+//		_, err := client.SendNotice("username is too long")
+//		if err != nil {
+//			log.Error(err)
+//			return false
+//		}
+//	}
+//	// Add our new client to our map
+//	if err := s.clientAdd(username, client); err != nil {
+//		log.Error(err)
+//		return false
+//	}
+//	// Set our username for our client connection
+//	client.Username = username
+//	// Let everyone know that we have connected
+//	s.broadcast(plib.SVR_NOTICE, []byte(username + " connected"))
+//	return true
+//}
+//
+//func (s *Server) cmdWho(client *Client) {
+//	log.Debug("WHO command requested")
+//	if client.Username == "" {
+//		_, err := client.SendNotice("please register yourself with the server")
+//		if err != nil {
+//			log.Error(err)
+//		}
+//		return
+//	}
+//	msg := fmt.Sprintf("Who (%v users):\n", len(s.clients))
+//	for username, _ := range s.clients {
+//		msg += fmt.Sprintf(" %v\n", username)
+//	}
+//	_, err := client.SendNotice(msg)
+//	if err != nil {
+//		log.Error(err)
+//	}
+//}
 
 func (s *Server) broadcast(cmdType int, buf []byte) {
 	for _, c := range s.clients {

@@ -9,7 +9,6 @@ var (
 		RegisterPage,
 		RegisterWarningPage,
 		InboxPage,
-		SearchPage,
 		ComposePage,
 		UnavailablePage,
 	}
