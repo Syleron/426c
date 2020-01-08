@@ -16,6 +16,8 @@ import (
 	"strings"
 )
 
+// TODO: Queue messages that have failed to send for whatever reason.. probably because the user was offline.
+
 type Client struct {
 	Reader *bufio.Reader
 	Writer *bufio.Writer
