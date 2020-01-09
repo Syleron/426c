@@ -70,6 +70,8 @@ func (c *Client) commandRouter(p []byte) {
 	switch p[0] {
 	case plib.SVR_LOGIN:
 		c.svrLogin(p[1:])
+	case plib.SVR_USER:
+		c.svrUser(p[1:])
 	default:
 	}
 }
@@ -204,6 +206,22 @@ func (c *Client) svrMsgTo() {
 
 }
 
+func (c *Client) svrUser(p []byte) {
+	var userObj models.UserResponseModel
+	if err := json.Unmarshal(p, &userObj); err != nil {
+		log.Debug("unable to unmarshal packet")
+		return
+	}
+	if !userObj.Success {
+		showError(ClientError{
+			Message:  userObj.Message,
+			Button:   "Continue",
+			Continue: nil,
+		})
+		return
+	}
+	panic(userObj)
+}
 
 
 func (c *Client) Close() {}

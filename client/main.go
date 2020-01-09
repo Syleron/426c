@@ -11,6 +11,7 @@ import (
 var (
 	app = tview.NewApplication()
 	pages = tview.NewPages()
+	layout *tview.Flex
 	//user = &User{}
 	//sockets *client.Client
 	client *Client
@@ -58,7 +59,7 @@ func main() {
 	// Defer our client close
 	defer client.Close()
 	// Create the main layout
-	layout := tview.NewFlex().
+	layout = tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(header(), 1, 1, false).
 		AddItem(pages, 0, 1, true).
