@@ -18,5 +18,7 @@ type UserRequestModel struct {
 }
 
 type UserResponseModel struct {
-	User User `json:"user,omitempty"`
+	Success bool   `json:"success,omitempty"`
+	Message string `json:"message,omitempty"`
+	User    User   `json:"user,omitempty"`
 }

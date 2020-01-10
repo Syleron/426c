@@ -16,12 +16,11 @@ import (
 	"strings"
 )
 
-// TODO: Queue messages that have failed to send for whatever reason.. probably because the user was offline.
-
 type Client struct {
 	Reader *bufio.Reader
 	Writer *bufio.Writer
 	Conn   net.Conn
+	MQ *MessageQueue
 }
 
 func setupClient() (*Client, error) {
@@ -46,6 +45,7 @@ func setupClient() (*Client, error) {
 		Writer: bufio.NewWriter(conn),
 		Reader: bufio.NewReader(conn),
 		Conn:   conn,
+		MQ: NewMessageQueue(),
 	}
 	// Put our handlers into a go routine
 	go c.connectionHandler()
@@ -75,6 +75,10 @@ func (c *Client) commandRouter(p []byte) {
 	default:
 	}
 }
+
+// ||
+// Client Requests
+// ||
 
 func (c *Client) cmdRegister(username string, password string) {
 	var pgp = gopenpgp.GetGopenPGP()
@@ -125,24 +129,6 @@ func (c *Client) cmdRegister(username string, password string) {
 	}
 }
 
-func (c *Client) svrRegister(p []byte) error {
-	var regObj models.RegisterResponseModel
-	if err := json.Unmarshal(p, &regObj); err != nil {
-		panic("unable to unmarshal packet")
-	}
-	if !regObj.Success {
-		showError(ClientError{
-			Message:  regObj.Message,
-			Button:   "Continue",
-			Continue: func() {
-				pages.SwitchToPage("login")
-			},
-		})
-		return nil
-	}
-	return nil
-}
-
 func (c *Client) cmdLogin(username string, password string) {
 	// Generate password hash
 	hashString := hashPassword(password)
@@ -164,6 +150,43 @@ func (c *Client) cmdLogin(username string, password string) {
 	}
 }
 
+// cmdMsgTo - Send a private encrypted message to a particular user
+// TODO: Successful/failed messages need to be marked in our local DB
+// Process:
+// 1) Send cmd_user request in attempt to ensure user exists.
+// 2)
+func (c *Client) cmdMsgTo(m *models.Message) {
+	// We need to get our recipients deets so we can encrypt our message
+	_, err := c.Send(plib.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
+		Username: m.To,
+	}))
+	if err != nil {
+		panic(err)
+	}
+}
+
+// ||
+// Server Responses
+// ||
+
+func (c *Client) svrRegister(p []byte) error {
+	var regObj models.RegisterResponseModel
+	if err := json.Unmarshal(p, &regObj); err != nil {
+		panic("unable to unmarshal packet")
+	}
+	if !regObj.Success {
+		showError(ClientError{
+			Message:  regObj.Message,
+			Button:   "Continue",
+			Continue: func() {
+				pages.SwitchToPage("login")
+			},
+		})
+		return nil
+	}
+	return nil
+}
+
 func (c *Client) svrLogin(p []byte) {
 	var loginObj models.LoginResponseModel
 	if err := json.Unmarshal(p, &loginObj); err != nil {
@@ -181,25 +204,6 @@ func (c *Client) svrLogin(p []byte) {
 		return
 	}
 	pages.SwitchToPage("inbox")
-}
-
-// cmdMsgTo - Send a private encrypted message to a particular user
-// Process:
-// 1) Send cmd_user request in attempt to ensure user exists.
-// 2)
-func (c *Client) cmdMsgTo(username string, message string) {
-	//msgToObj := &models.MsgRequestModel{
-	//	Message: "",
-	//	From:    "",
-	//	To:      "",
-	//	Date:    time.Now(),
-	//}
-	_, err := c.Send(plib.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
-		Username: username,
-	}))
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (c *Client) svrMsgTo() {
@@ -220,7 +224,7 @@ func (c *Client) svrUser(p []byte) {
 		})
 		return
 	}
-	panic(userObj)
+	//panic(userObj)
 }
 
 

@@ -117,9 +117,31 @@ func (s *Server) commandRouter(c *Client, p []byte) {
 		log.Debug("message register command")
 		s.cmdRegister(c, p[1:])
 	case plib.CMD_USER:
+		log.Debug("message user command")
 		s.cmdUser(c, p[1:])
+	case plib.CMD_MSGTO:
+		log.Debug("message msg to command")
+		s.cmdMsgTo(c, p[1:])
 	default:
+		// TODO: This shouldn't ever happen. Perhaps handle block or handle this.
 		log.Debug("received unknown command")
+	}
+}
+
+func (s *Server) cmdMsgTo(c *Client, p []byte) {
+	var msgObj models.MsgToRequestModel
+	if err := json.Unmarshal(p, &msgObj); err != nil {
+		log.Debug("unable to unmarshal packet")
+		return
+	}
+	// Make sure our user is online otherwise fail
+	if _, ok := s.clients[msgObj.Message.To]; !ok {
+		log.Debug("unable to send message as user is offline")
+		c.Send(plib.SVR_USER, utils.MarshalResponse(&models.MsgToResponseModel{
+			Success: false,
+			Message: "Unable to send message as user is offline",
+		}))
+		return
 	}
 }
 
@@ -133,9 +155,18 @@ func (s *Server) cmdUser(c *Client, p []byte) {
 	user, err := userGet(userObj.Username)
 	if err != nil {
 		log.Error(err)
+		c.Send(plib.SVR_USER, utils.MarshalResponse(&models.UserResponseModel{
+			Success: false,
+			Message: err.Error(),
+		}))
 		return
 	}
-	log.Debug(user.Username)
+	// Success, send details back
+	c.Send(plib.SVR_USER, utils.MarshalResponse(&models.UserResponseModel{
+		Success: true,
+		Message: "user found",
+		User:    user,
+	}))
 }
 
 func (s *Server) cmdRegister(c *Client, p []byte) {

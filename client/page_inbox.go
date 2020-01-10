@@ -111,3 +111,7 @@ func InboxPage() (id string, content tview.Primitive) {
 
 	return "inbox", grid
 }
+
+func populateUserList() {
+
+}

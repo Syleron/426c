@@ -14,8 +14,10 @@ func showError(mError ClientError) {
 		SetText(mError.Message).
 		AddButtons([]string{mError.Button}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			app.SetRoot(pages, true)
-			mError.Continue()
+			app.SetRoot(layout, true)
+			if mError.Continue != nil {
+				mError.Continue()
+			}
 		})
 	app.SetRoot(modal, true)
 	app.Draw()

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/rivo/tview"
+	"github.com/syleron/426c/common/database"
 	"github.com/syleron/426c/common/security"
 	"strconv"
 	"time"
@@ -12,9 +13,8 @@ var (
 	app = tview.NewApplication()
 	pages = tview.NewPages()
 	layout *tview.Flex
-	//user = &User{}
-	//sockets *client.Client
 	client *Client
+	db *database.Database
 )
 
 func header() *tview.TextView {
@@ -49,12 +49,18 @@ func footer() *tview.TextView {
 }
 
 func main() {
+	var err error
 	// Generate our connection keys
 	if err := security.GenerateKeys("127.0.0.1"); err != nil {
 		panic(err)
 	}
+	// Load our database
+	db, err = database.New("426c")
+	if err != nil {
+		panic(err)
+	}
+	db.CreateBucket("messages")
 	// Setup our socket client
-	var err error
 	client, err = setupClient()
 	// Defer our client close
 	defer client.Close()

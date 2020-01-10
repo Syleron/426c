@@ -3,7 +3,9 @@ package main
 import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"github.com/syleron/426c/common/models"
 	"github.com/syleron/femto"
+	"time"
 )
 
 var	(
@@ -51,7 +53,22 @@ func ComposePage() (id string, content tview.Primitive) {
 	cancelButton.SetBorder(true).SetRect(0, 0, 0, 1)
 
 	sendButton := tview.NewButton("Send Message").SetSelectedFunc(func() {
-		client.cmdMsgTo(toInputField.GetText(), buffer.String())
+		// Define our message
+		message := &models.Message{
+			Message: buffer.String(),
+			To:      toInputField.GetText(),
+			Date:    time.Time{},
+			Success: false,
+		}
+		// Add our message to our local DB
+		if err := dbMessageAdd(message); err != nil {
+			panic(err)
+		}
+		// TODO: We need to add this message to our message queue
+		// Add our message to our message queue to send/process
+		client.MQ.Add(message)
+		// Process our message queue
+		go client.MQ.Process()
 	})
 	sendButton.SetBorder(true).SetRect(0, 0, 0, 1)
 

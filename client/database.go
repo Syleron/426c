@@ -6,15 +6,39 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/syleron/426c/common/models"
 	"github.com/syleron/426c/common/utils"
-	"time"
 )
 
-func userAdd(u *models.User) error {
-	t := time.Now()
-	_, err := userGet(u.Username)
+// dbMessageAdd - Add a message to our data store
+func dbMessageAdd(m *models.Message) error {
+	// make sure our bucket exists before attempting to add a message
+	db.CreateBucket(m.To)
+	// Attempt to add our message
+	return db.Update(func(tx *bolt.Tx) error {
+		// Retrieve the users bucket.
+		b := tx.Bucket([]byte(m.To))
+		// Generate ID for the user.
+		id, _ := b.NextSequence()
+		// Set our ID
+		m.ID = int(id)
+		// Marshal user data into bytes.
+		buf, err := json.Marshal(m)
+		if err != nil {
+			return err
+		}
+		// Persist bytes to users bucket.
+		return b.Put(utils.Itob(m.ID), buf)
+	})
+}
+
+func dbUserAdd(u *models.User) error {
+	// make sure our bucket exists before attempting to add a message
+	db.CreateBucket("users")
+	// Check to see if our user exists
+	_, err := dbUserGet(u.Username)
 	if err == nil {
 		return errors.New("user already exists")
 	}
+	// Attempt to add our message
 	return db.Update(func(tx *bolt.Tx) error {
 		// Retrieve the users bucket.
 		b := tx.Bucket([]byte("users"))
@@ -22,8 +46,6 @@ func userAdd(u *models.User) error {
 		id, _ := b.NextSequence()
 		// Set our ID
 		u.ID = int(id)
-		// Set our reg. date
-		u.RegisteredDate = t
 		// Marshal user data into bytes.
 		buf, err := json.Marshal(u)
 		if err != nil {
@@ -34,9 +56,7 @@ func userAdd(u *models.User) error {
 	})
 }
 
-func userDelete() {}
-
-func userGet(username string) (models.User, error) {
+func dbUserGet(username string) (models.User, error) {
 	var user models.User
 	var ub []byte
 	err := db.View(func(tx *bolt.Tx) error {
@@ -73,4 +93,3 @@ func userGet(username string) (models.User, error) {
 	// return our issue
 	return user, err
 }
-
