@@ -1,12 +1,14 @@
 package main
 
 import (
+	gopenpgp "github.com/ProtonMail/gopenpgp/crypto"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/models"
 	"github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
 	"github.com/syleron/femto"
+	"strings"
 	"time"
 )
 
@@ -64,10 +66,12 @@ func ComposePage() (id string, content tview.Primitive) {
 
 	// Send button
 	sendButton := tview.NewButton("Send Message").SetSelectedFunc(func() {
+		var pgp = gopenpgp.GetGopenPGP()
 		toUser := toInputField.GetText()
 
 		// Make sure we have this user in our local DB to encrypt
-		if _, err := dbUserGet(toUser); err != nil {
+		usrObj, err := dbUserGet(toUser)
+		if err != nil {
 			showError(ClientError{
 				Message:  "Unable to submit message to user as it does not exist",
 				Button:   "Continue",
@@ -75,11 +79,27 @@ func ComposePage() (id string, content tview.Primitive) {
 			return
 		}
 
-		// Encrypt our message
+		// Encrypt message using our recipients public key
+		keyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(usrObj.PubKey))
+		if err != nil {
+			panic(err)
+		}
+		encMsg, err := pgp.EncryptMessage(
+			buffer.String(),
+			keyRing,
+			nil,
+			"",
+			false,
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		// TODO Encrypt using my public key so that I can read it later
 
 		// Define our message object
 		message := &models.Message{
-			Message: buffer.String(),
+			ToMessage: encMsg,
 			To:      toUser,
 			Date:    time.Time{},
 			Success: false,
@@ -95,6 +115,9 @@ func ComposePage() (id string, content tview.Primitive) {
 
 		// Process our message queue
 		go client.MQ.Process()
+
+		// Switch back to our inbox
+		pages.SwitchToPage("inbox")
 	})
 	sendButton.SetBorder(true).SetRect(0, 0, 0, 1)
 

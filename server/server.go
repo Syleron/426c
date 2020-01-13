@@ -165,7 +165,10 @@ func (s *Server) cmdUser(c *Client, p []byte) {
 	c.Send(plib.SVR_USER, utils.MarshalResponse(&models.UserResponseModel{
 		Success: true,
 		Message: "user found",
-		User:    user,
+		User:    models.User{
+			Username:       user.Username,
+			PubKey:         user.PubKey,
+		},
 	}))
 }
 
