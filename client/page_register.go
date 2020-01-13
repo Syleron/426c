@@ -18,8 +18,8 @@ func RegisterPage() (id string, content tview.Primitive) {
 			// Make sure our passwords match!
 			if password != passwordAgain {
 				showError(ClientError{
-					Message:  "Passwords do not match",
-					Button:   "Continue",
+					Message: "Passwords do not match",
+					Button:  "Continue",
 					Continue: func() {
 						pages.SwitchToPage("register")
 					},

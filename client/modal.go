@@ -3,11 +3,11 @@ package main
 import "github.com/rivo/tview"
 
 type ClientModal struct {
-	Message string
+	Message      string
 	SubmitButton string
 	CancelButton string
-	Continue func()
-	Cancel func()
+	Continue     func()
+	Cancel       func()
 }
 
 func showModal(mModal ClientModal) {
@@ -28,7 +28,7 @@ func showModal(mModal ClientModal) {
 		app.SetRoot(layout, true)
 		switch buttonIndex {
 		case 1:
-			if (mModal.Cancel != nil) {
+			if mModal.Cancel != nil {
 			}
 			mModal.Cancel()
 		default:

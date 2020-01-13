@@ -3,8 +3,8 @@ package main
 import "github.com/rivo/tview"
 
 type ClientError struct {
-	Message string
-	Button string
+	Message  string
+	Button   string
 	Continue func()
 }
 

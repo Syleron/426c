@@ -4,14 +4,16 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/models"
+	"github.com/syleron/426c/common/packet"
+	"github.com/syleron/426c/common/utils"
 	"github.com/syleron/femto"
 	"time"
 )
 
-var	(
+var (
 	composeMessageContainer *tview.TextView
-	composeMessageField *tview.InputField
-	composeToField *tview.InputField
+	composeMessageField     *tview.InputField
+	composeToField          *tview.InputField
 )
 
 func ComposePage() (id string, content tview.Primitive) {
@@ -21,14 +23,11 @@ func ComposePage() (id string, content tview.Primitive) {
 		SetBorders(false).
 		SetGap(0, 2)
 
-	userGrid :=  tview.NewFlex()
-	chatGrid :=  tview.NewFlex()
-
-	//userGrid.SetBorder(true)
-	//userGrid.SetBorderPadding(1,1,1,1,)
+	userGrid := tview.NewFlex()
+	chatGrid := tview.NewFlex()
 
 	chatGrid.SetBorder(true)
-	chatGrid.SetBorderPadding(1,1,1,1)
+	chatGrid.SetBorderPadding(1, 1, 1, 1)
 	chatGrid.SetTitle(" Compose New Message ")
 
 	messageContainer = tview.NewTextView().
@@ -47,26 +46,53 @@ func ComposePage() (id string, content tview.Primitive) {
 	toInputField := tview.NewInputField().
 		SetPlaceholder("Enter username")
 
+	// Get our USER from the network whilst we are writing
+	toInputField.SetDoneFunc(func(key tcell.Key) {
+		_, err := client.Send(packet.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
+			Username: toInputField.GetText(),
+		}))
+		if err != nil {
+			panic(err)
+		}
+	})
+
+	// Cancel button
 	cancelButton := tview.NewButton("Cancel").SetSelectedFunc(func() {
 		pages.SwitchToPage("inbox")
 	})
 	cancelButton.SetBorder(true).SetRect(0, 0, 0, 1)
 
+	// Send button
 	sendButton := tview.NewButton("Send Message").SetSelectedFunc(func() {
-		// Define our message
+		toUser := toInputField.GetText()
+
+		// Make sure we have this user in our local DB to encrypt
+		if _, err := dbUserGet(toUser); err != nil {
+			showError(ClientError{
+				Message:  "Unable to submit message to user as it does not exist",
+				Button:   "Continue",
+			})
+			return
+		}
+
+		// Encrypt our message
+
+		// Define our message object
 		message := &models.Message{
 			Message: buffer.String(),
-			To:      toInputField.GetText(),
+			To:      toUser,
 			Date:    time.Time{},
 			Success: false,
 		}
+
 		// Add our message to our local DB
 		if err := dbMessageAdd(message); err != nil {
 			panic(err)
 		}
-		// TODO: We need to add this message to our message queue
+
 		// Add our message to our message queue to send/process
 		client.MQ.Add(message)
+
 		// Process our message queue
 		go client.MQ.Process()
 	})

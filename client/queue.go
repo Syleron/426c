@@ -7,7 +7,7 @@ import (
 // Setup message queue for failed/pending messages
 
 type MessageQueue struct {
-	queue []*models.Message
+	queue      []*models.Message
 	processing bool
 }
 
@@ -22,6 +22,7 @@ func (mq *MessageQueue) Add(m *models.Message) {
 	mq.queue = append(mq.queue, m)
 }
 
+//
 func (mq *MessageQueue) Process() {
 	if !mq.processing {
 		mq.processing = true

@@ -5,10 +5,10 @@ import (
 	"github.com/rivo/tview"
 )
 
-var	(
-	messageContainer *tview.TextView
+var (
+	messageContainer  *tview.TextView
 	userListContainer *tview.Table
-	inputField *tview.InputField
+	inputField        *tview.InputField
 )
 
 func InboxPage() (id string, content tview.Primitive) {
@@ -18,14 +18,14 @@ func InboxPage() (id string, content tview.Primitive) {
 		SetBorders(false).
 		SetGap(0, 2)
 
-	userGrid :=  tview.NewFlex()
-	chatGrid :=  tview.NewFlex()
+	userGrid := tview.NewFlex()
+	chatGrid := tview.NewFlex()
 
 	//userGrid.SetBorder(true)
 	//userGrid.SetBorderPadding(1,1,1,1,)
 
 	chatGrid.SetBorder(true)
-	chatGrid.SetBorderPadding(1,1,1,1)
+	chatGrid.SetBorderPadding(1, 1, 1, 1)
 
 	messageContainer = tview.NewTextView().
 		SetDynamicColors(true).
@@ -40,15 +40,15 @@ func InboxPage() (id string, content tview.Primitive) {
 
 	userListContainer = tview.NewTable()
 	userListContainer.SetBorder(true)
-	userListContainer.SetBorderPadding(1,1,1,1)
+	userListContainer.SetBorderPadding(1, 1, 1, 1)
 
-		//SetFixed(1, 1)
-		//SetDynamicColors(true).
-		//SetRegions(true).
-		//SetWordWrap(true).
-		//SetChangedFunc(func() {
-		//	app.Draw()
-		//})
+	//SetFixed(1, 1)
+	//SetDynamicColors(true).
+	//SetRegions(true).
+	//SetWordWrap(true).
+	//SetChangedFunc(func() {
+	//	app.Draw()
+	//})
 
 	//userListContainer.SetCell(0, 0, tview.NewTableCell("Willifer (Online)"))
 	//userListContainer.SetCell(1, 0, tview.NewTableCell("Haroto (Offline)"))

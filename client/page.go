@@ -2,6 +2,8 @@ package main
 
 import "github.com/rivo/tview"
 
+type Page func() (id string, content tview.Primitive)
+
 var (
 	pageItems = []Page{
 		SplashPage,
@@ -13,8 +15,6 @@ var (
 		UnavailablePage,
 	}
 )
-
-type Page func() (id string, content tview.Primitive)
 
 func LoadPages() {
 	for i, p := range pageItems {

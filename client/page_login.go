@@ -16,17 +16,17 @@ func LoginPage() (id string, content tview.Primitive) {
 		AddButton("Login", func() {
 			if username == "" || password == "" {
 				showError(ClientError{
-					Message:  "Please enter a username and password",
-					Button:   "Continue",
+					Message: "Please enter a username and password",
+					Button:  "Continue",
 					Continue: func() {
 						pages.SwitchToPage("login")
 					},
 				})
 				return
 			}
-		// Submit our registration to the server
-		client.cmdLogin(username, password)
-	}).
+			// Submit our registration to the server
+			client.cmdLogin(username, password)
+		}).
 		AddButton("Register", func() {
 			pages.SwitchToPage("register warning")
 		}).

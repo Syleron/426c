@@ -27,7 +27,7 @@ func reverseAny(s interface{}) {
 }
 
 func checkForAts(username, line string) bool {
-	return strings.Contains(line, "@" + strings.Title(username))
+	return strings.Contains(line, "@"+strings.Title(username))
 }
 
 func doEvery(d time.Duration, f func() error) {

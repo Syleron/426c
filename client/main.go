@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	app = tview.NewApplication()
-	pages = tview.NewPages()
+	app    = tview.NewApplication()
+	pages  = tview.NewPages()
 	layout *tview.Flex
 	client *Client
-	db *database.Database
+	db     *database.Database
 )
 
 func header() *tview.TextView {
@@ -36,11 +36,11 @@ func footer() *tview.TextView {
 		SetWrap(false)
 
 	// Do it first
-	fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " ")
+	fmt.Fprintf(foot, " [_] "+strconv.Itoa(getBlocks())+" ")
 	// Then update every 2 seconds
-	go doEvery(2 * time.Second, func() error {
+	go doEvery(2*time.Second, func() error {
 		foot.Clear()
-		fmt.Fprintf(foot, " [_] " + strconv.Itoa(getBlocks()) + " ")
+		fmt.Fprintf(foot, " [_] "+strconv.Itoa(getBlocks())+" ")
 		app.Draw()
 		return nil
 	})
@@ -72,8 +72,6 @@ func main() {
 		AddItem(footer(), 1, 1, false)
 	// Load our pages
 	LoadPages()
-	// Input
-	InputHandlers()
 	if err != nil {
 		pages.SwitchToPage("unavailable")
 	}

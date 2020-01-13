@@ -30,7 +30,7 @@ func dbMessageAdd(m *models.Message) error {
 	})
 }
 
-func dbUserAdd(u *models.User) error {
+func dbUserAdd(u models.User) error {
 	// make sure our bucket exists before attempting to add a message
 	db.CreateBucket("users")
 	// Check to see if our user exists

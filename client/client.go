@@ -20,7 +20,7 @@ type Client struct {
 	Reader *bufio.Reader
 	Writer *bufio.Writer
 	Conn   net.Conn
-	MQ *MessageQueue
+	MQ     *MessageQueue
 }
 
 func setupClient() (*Client, error) {
@@ -45,7 +45,7 @@ func setupClient() (*Client, error) {
 		Writer: bufio.NewWriter(conn),
 		Reader: bufio.NewReader(conn),
 		Conn:   conn,
-		MQ: NewMessageQueue(),
+		MQ:     NewMessageQueue(),
 	}
 	// Put our handlers into a go routine
 	go c.connectionHandler()
@@ -115,7 +115,7 @@ func (c *Client) cmdRegister(username string, password string) {
 	// Create our object to send
 	registerObject := &models.RegisterRequestModel{
 		Username:   username,
-		PassHash:    hashRemainder,
+		PassHash:   hashRemainder,
 		EncPrivKey: encryptedKey,
 		PubKey:     publicKey,
 	}
@@ -136,9 +136,9 @@ func (c *Client) cmdLogin(username string, password string) {
 	hashRemainder := hashString[32:48]
 	// Create our object to send
 	registerObject := &models.LoginRequestModel{
-		Username:   username,
+		Username: username,
 		Password: hashRemainder,
-		Version: VERSION,
+		Version:  VERSION,
 	}
 	// Send our username, hash remainder.
 	_, err := c.Send(
@@ -176,8 +176,8 @@ func (c *Client) svrRegister(p []byte) error {
 	}
 	if !regObj.Success {
 		showError(ClientError{
-			Message:  regObj.Message,
-			Button:   "Continue",
+			Message: regObj.Message,
+			Button:  "Continue",
 			Continue: func() {
 				pages.SwitchToPage("login")
 			},
@@ -195,8 +195,8 @@ func (c *Client) svrLogin(p []byte) {
 	}
 	if !loginObj.Success {
 		showError(ClientError{
-			Message:  loginObj.Message,
-			Button:   "Continue",
+			Message: loginObj.Message,
+			Button:  "Continue",
 			Continue: func() {
 				pages.SwitchToPage("login")
 			},
@@ -210,6 +210,7 @@ func (c *Client) svrMsgTo() {
 
 }
 
+// svrUser - User Object response from network and update our local DB
 func (c *Client) svrUser(p []byte) {
 	var userObj models.UserResponseModel
 	if err := json.Unmarshal(p, &userObj); err != nil {
@@ -224,8 +225,8 @@ func (c *Client) svrUser(p []byte) {
 		})
 		return
 	}
-	//panic(userObj)
+	// Insert our user into our local DB
+	dbUserAdd(userObj.User)
 }
-
 
 func (c *Client) Close() {}
