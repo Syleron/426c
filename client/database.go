@@ -30,6 +30,26 @@ func dbMessageAdd(m *models.Message) error {
 	})
 }
 
+func dbUserList() ([]models.User, error) {
+	response := []models.User{}
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		if b == nil {
+			return errors.New("unable to fetch bucket")
+		}
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			var user models.User
+			if err := json.Unmarshal(v, &user); err != nil {
+				return err
+			}
+			response = append(response, user)
+		}
+		return nil
+	})
+	return response, err
+}
+
 func dbUserAdd(u models.User) error {
 	// make sure our bucket exists before attempting to add a message
 	db.CreateBucket("users")

@@ -12,7 +12,6 @@ import (
 	plib "github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
 	"net"
-	"os"
 	"strings"
 )
 
@@ -60,7 +59,7 @@ func (c *Client) connectionHandler() {
 	for {
 		p, err := plib.PacketRead(c.Reader)
 		if err != nil {
-			os.Exit(1)
+			app.Stop()
 		}
 		c.commandRouter(p)
 	}
@@ -96,6 +95,10 @@ func (c *Client) cmdRegister(username string, password string) {
 		"rsa",
 		4096,
 	)
+	// TODO: Save our RSA Key
+	if err := utils.WriteFile(rsaKey, username); err != nil{
+		panic(err)
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -193,6 +196,7 @@ func (c *Client) svrLogin(p []byte) {
 		log.Debug("unable to unmarshal packet")
 		return
 	}
+	// Make sure our response object was successful
 	if !loginObj.Success {
 		showError(ClientError{
 			Message: loginObj.Message,
@@ -203,6 +207,18 @@ func (c *Client) svrLogin(p []byte) {
 		})
 		return
 	}
+	// Load our private key
+	b, err := utils.LoadFile(loginObj.Username)
+	if err != nil {
+		showError(ClientError{
+			Message: "Login failed. Unable to load private key for " + loginObj.Username + ".",
+			Button:  "Continue",
+		})
+		return
+	}
+	// Set our private key
+	privKey = string(b)
+	// Success, switch pages
 	pages.SwitchToPage("inbox")
 }
 

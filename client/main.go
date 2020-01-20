@@ -5,6 +5,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/database"
 	"github.com/syleron/426c/common/security"
+	"github.com/syleron/426c/common/utils"
 	"strconv"
 	"time"
 )
@@ -15,6 +16,7 @@ var (
 	layout *tview.Flex
 	client *Client
 	db     *database.Database
+	privKey string
 )
 
 func header() *tview.TextView {
@@ -50,10 +52,8 @@ func footer() *tview.TextView {
 
 func main() {
 	var err error
-	// Generate our connection keys
-	if err := security.GenerateKeys("127.0.0.1"); err != nil {
-		panic(err)
-	}
+	mainCheckKeys()
+	mainLoadPrivateKey()
 	// Load our database
 	db, err = database.New("426c")
 	if err != nil {
@@ -79,4 +79,21 @@ func main() {
 	if err := app.SetRoot(layout, true).Run(); err != nil {
 		panic(err)
 	}
+}
+
+func mainCheckKeys() {
+	// Generate our connection keys
+	if err := security.GenerateKeys("127.0.0.1"); err != nil {
+		panic(err)
+	}
+}
+
+func mainLoadPrivateKey() {
+	// Load our key into memory
+	b, err := utils.LoadFile("key.pem")
+	if err != nil {
+		panic(err)
+	}
+	// Set our privact key
+	privKey = string(b)
 }

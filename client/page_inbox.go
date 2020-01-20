@@ -81,6 +81,15 @@ func InboxPage() (id string, content tview.Primitive) {
 
 	composeButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
+		case tcell.KeyESC:
+			showModal(ClientModal{
+				Message:      "Are you sure you would like to disconnect from the 426c network?",
+				SubmitButton: "Exit",
+				CancelButton: "Cancel",
+				Continue: func() {
+					app.Stop()
+				},
+			})
 		case tcell.KeyTAB:
 			app.SetFocus(userListContainer)
 		}
@@ -109,9 +118,17 @@ func InboxPage() (id string, content tview.Primitive) {
 
 	messageContainer.SetScrollable(true)
 
+	// Get our contacts
+	drawContactsList()
+
 	return "inbox", grid
 }
 
-func populateUserList() {
+func drawContactsList() {
+	// Get our contacts from our db
+	//users, err := dbUserList()
+	//if err != nil {
+	//	panic(err)
+	//}
 
 }

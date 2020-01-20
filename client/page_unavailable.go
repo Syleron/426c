@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/rivo/tview"
-	"os"
 )
 
 func UnavailablePage() (id string, content tview.Primitive) {
@@ -11,7 +10,7 @@ func UnavailablePage() (id string, content tview.Primitive) {
 		AddButtons([]string{"Exit"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == "Exit" {
-				os.Exit(0)
+				app.Stop()
 			}
 		})
 	return "unavailable", modal

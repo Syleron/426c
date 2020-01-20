@@ -28,6 +28,7 @@ import (
 // TODO - Prevent people from sending plain text
 // TODO - Proper Server -> Client error handling
 // TODO - Session timeout
+// TODO - Make sure you cannot send a message to yourself
 
 // Username -> keys
 // Store keys with server
@@ -207,7 +208,7 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		}))
 		return
 	}
-	// compare login credentials
+	// Get our user account
 	user, err := userGet(loginObj.Username)
 	if err != nil {
 		log.Debug("unable to find user account")
@@ -227,6 +228,7 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		return
 	}
 	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
+		Username: loginObj.Username,
 		Success: true,
 		Message: "success",
 	}))

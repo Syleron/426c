@@ -48,16 +48,6 @@ func ComposePage() (id string, content tview.Primitive) {
 	toInputField := tview.NewInputField().
 		SetPlaceholder("Enter username")
 
-	// Get our USER from the network whilst we are writing
-	toInputField.SetDoneFunc(func(key tcell.Key) {
-		_, err := client.Send(packet.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
-			Username: toInputField.GetText(),
-		}))
-		if err != nil {
-			panic(err)
-		}
-	})
-
 	// Cancel button
 	cancelButton := tview.NewButton("Cancel").SetSelectedFunc(func() {
 		pages.SwitchToPage("inbox")
@@ -80,13 +70,13 @@ func ComposePage() (id string, content tview.Primitive) {
 		}
 
 		// Encrypt message using our recipients public key
-		keyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(usrObj.PubKey))
+		toKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(usrObj.PubKey))
 		if err != nil {
 			panic(err)
 		}
-		encMsg, err := pgp.EncryptMessage(
+		encToMsg, err := pgp.EncryptMessage(
 			buffer.String(),
-			keyRing,
+			toKeyRing,
 			nil,
 			"",
 			false,
@@ -95,11 +85,26 @@ func ComposePage() (id string, content tview.Primitive) {
 			panic(err)
 		}
 
-		// TODO Encrypt using my public key so that I can read it later
+		// Encrypt our message using our details
+		fromKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(privKey))
+		if err != nil {
+			panic(err)
+		}
+		encFromMsg, err := pgp.EncryptMessage(
+			buffer.String(),
+			fromKeyRing,
+			nil,
+			"",
+			false,
+		)
+		if err != nil {
+			panic(err)
+		}
 
 		// Define our message object
 		message := &models.Message{
-			ToMessage: encMsg,
+			FromMessage: encFromMsg,
+			ToMessage: encToMsg,
 			To:      toUser,
 			Date:    time.Time{},
 			Success: false,
@@ -136,6 +141,13 @@ func ComposePage() (id string, content tview.Primitive) {
 	toInputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB:
+			// Check if user exists and get public key details
+			_, err := client.Send(packet.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
+				Username: toInputField.GetText(),
+			}))
+			if err != nil {
+				panic(err)
+			}
 			app.SetFocus(inputField)
 		case tcell.KeyESC:
 			app.SetFocus(cancelButton)

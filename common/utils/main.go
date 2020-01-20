@@ -3,6 +3,8 @@ package utils
 import (
 	"encoding/binary"
 	"encoding/json"
+	"errors"
+	"io/ioutil"
 )
 
 // itob returns an 8-byte big endian representation of v.
@@ -20,4 +22,22 @@ func MarshalResponse(obj interface{}) []byte{
 		panic(err)
 	}
 	return b
+}
+
+func LoadFile(file string) ([]byte, error) {
+	c, err := ioutil.ReadFile(file)
+
+	if err != nil {
+		return nil, errors.New("unable to load file: " + file)
+	}
+
+	return []byte(c), nil
+}
+
+func WriteFile(contents string, file string) error {
+	err := ioutil.WriteFile(file, []byte(contents), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }

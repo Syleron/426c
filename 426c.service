@@ -5,7 +5,7 @@ Description=426c Server
 
 [Service]
 Type=simple
-User=root
+ClientModal=root
 Group=root
 ExecStart=/usr/local/sbin/server
 ExecReload=/bin/kill -SIGUSR2 $MAINPID

@@ -29,8 +29,8 @@ func showModal(mModal ClientModal) {
 		switch buttonIndex {
 		case 1:
 			if mModal.Cancel != nil {
+				mModal.Cancel()
 			}
-			mModal.Cancel()
 		default:
 			if mModal.Continue != nil {
 				mModal.Continue()
