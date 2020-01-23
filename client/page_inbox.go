@@ -125,10 +125,15 @@ func InboxPage() (id string, content tview.Primitive) {
 }
 
 func drawContactsList() {
+	// Clear our current list
+	userListContainer.Clear()
 	// Get our contacts from our db
-	//users, err := dbUserList()
-	//if err != nil {
-	//	panic(err)
-	//}
-
+	users, err := dbUserList()
+	if err != nil {
+		panic(err)
+	}
+	// List all of our contacts in our local DB
+	for _, user := range users {
+		userListContainer.SetCell(0, 0, tview.NewTableCell(user.Username))
+	}
 }

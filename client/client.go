@@ -220,6 +220,8 @@ func (c *Client) svrLogin(p []byte) {
 	privKey = string(b)
 	// Success, switch pages
 	pages.SwitchToPage("inbox")
+	// get our contacts
+	drawContactsList()
 }
 
 func (c *Client) svrMsgTo() {

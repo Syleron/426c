@@ -181,6 +181,8 @@ func ComposePage() (id string, content tview.Primitive) {
 		switch event.Key() {
 		case tcell.KeyESC:
 			pages.SwitchToPage("inbox")
+			// Redraw our contacts list
+			drawContactsList()
 		}
 		return event
 	})
