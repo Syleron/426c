@@ -13,7 +13,7 @@ type Database struct {
 }
 
 func New(name string) (*Database, error) {
-	log.Debug("creating new database", name+".db")
+	log.Debug("creating new database ", name+".db")
 	// Get our directory path
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	// Create our new database file

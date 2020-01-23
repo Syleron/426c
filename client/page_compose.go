@@ -56,73 +56,7 @@ func ComposePage() (id string, content tview.Primitive) {
 
 	// Send button
 	sendButton := tview.NewButton("Send Message").SetSelectedFunc(func() {
-		var pgp = gopenpgp.GetGopenPGP()
-		toUser := toInputField.GetText()
-
-		// Make sure we have this user in our local DB to encrypt
-		usrObj, err := dbUserGet(toUser)
-		if err != nil {
-			showError(ClientError{
-				Message:  "Unable to submit message to user as it does not exist",
-				Button:   "Continue",
-			})
-			return
-		}
-
-		// Encrypt message using our recipients public key
-		toKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(usrObj.PubKey))
-		if err != nil {
-			panic(err)
-		}
-		encToMsg, err := pgp.EncryptMessage(
-			buffer.String(),
-			toKeyRing,
-			nil,
-			"",
-			false,
-		)
-		if err != nil {
-			panic(err)
-		}
-
-		// Encrypt our message using our details
-		fromKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(privKey))
-		if err != nil {
-			panic(err)
-		}
-		encFromMsg, err := pgp.EncryptMessage(
-			buffer.String(),
-			fromKeyRing,
-			nil,
-			"",
-			false,
-		)
-		if err != nil {
-			panic(err)
-		}
-
-		// Define our message object
-		message := &models.Message{
-			FromMessage: encFromMsg,
-			ToMessage: encToMsg,
-			To:      toUser,
-			Date:    time.Time{},
-			Success: false,
-		}
-
-		// Add our message to our local DB
-		if err := dbMessageAdd(message); err != nil {
-			panic(err)
-		}
-
-		// Add our message to our message queue to send/process
-		client.MQ.Add(message)
-
-		// Process our message queue
-		go client.MQ.Process()
-
-		// Switch back to our inbox
-		pages.SwitchToPage("inbox")
+		submitMessage(toInputField.GetText(), buffer.String())
 	})
 	sendButton.SetBorder(true).SetRect(0, 0, 0, 1)
 
@@ -205,5 +139,70 @@ func ComposePage() (id string, content tview.Primitive) {
 }
 
 func submitMessage(toUser string, message string) {
+	var pgp = gopenpgp.GetGopenPGP()
 
+	// Make sure we have this user in our local DB to encrypt
+	usrObj, err := dbUserGet(toUser)
+	if err != nil {
+		showError(ClientError{
+			Message:  "Unable to submit message to user as it does not exist",
+			Button:   "Continue",
+		})
+		return
+	}
+
+	// Encrypt message using our recipients public key
+	toKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(usrObj.PubKey))
+	if err != nil {
+		panic(err)
+	}
+	encToMsg, err := pgp.EncryptMessage(
+		message,
+		toKeyRing,
+		nil,
+		"",
+		false,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Encrypt our message using our details
+	fromKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(privKey))
+	if err != nil {
+		panic(err)
+	}
+	encFromMsg, err := pgp.EncryptMessage(
+		message,
+		fromKeyRing,
+		nil,
+		"",
+		false,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Define our message object
+	msgObj := &models.Message{
+		FromMessage: encFromMsg,
+		ToMessage: encToMsg,
+		To:      toUser,
+		Date:    time.Time{},
+		Success: false,
+	}
+
+	// Add our message to our local DB
+	if err := dbMessageAdd(msgObj); err != nil {
+		panic(err)
+	}
+
+	// Add our message to our message queue to send/process
+	client.MQ.Add(msgObj)
+
+	// Process our message queue
+	go client.MQ.Process()
+
+	// Switch back to our inbox
+	pages.SwitchToPage("inbox")
 }

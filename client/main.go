@@ -60,6 +60,7 @@ func main() {
 		panic(err)
 	}
 	db.CreateBucket("messages")
+	db.CreateBucket("users")
 	// Setup our socket client
 	client, err = setupClient()
 	// Defer our client close

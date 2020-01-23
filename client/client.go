@@ -26,7 +26,7 @@ func setupClient() (*Client, error) {
 	// Setup our listener
 	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 	config := tls.Config{
 		Certificates:       []tls.Certificate{cert},
@@ -71,6 +71,8 @@ func (c *Client) commandRouter(p []byte) {
 		c.svrLogin(p[1:])
 	case plib.SVR_USER:
 		c.svrUser(p[1:])
+	case plib.SVR_MSGTO:
+		c.svrMsgTo(p[1:])
 	default:
 	}
 }
@@ -97,23 +99,23 @@ func (c *Client) cmdRegister(username string, password string) {
 	)
 	// TODO: Save our RSA Key
 	if err := utils.WriteFile(rsaKey, username); err != nil{
-		panic(err)
+		app.Stop()
 	}
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 	keyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(rsaKey))
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 	publicKey, err := keyRing.GetArmoredPublicKey()
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 	// Encrypt our private RSA key
 	encryptedKey, err := encryptRSA([]byte(rsaKey), []byte(hashRemainder), []byte(hashKey))
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 	// Create our object to send
 	registerObject := &models.RegisterRequestModel{
@@ -128,7 +130,7 @@ func (c *Client) cmdRegister(username string, password string) {
 		utils.MarshalResponse(registerObject),
 	)
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 }
 
@@ -149,22 +151,18 @@ func (c *Client) cmdLogin(username string, password string) {
 		utils.MarshalResponse(registerObject),
 	)
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 }
 
 // cmdMsgTo - Send a private encrypted message to a particular user
-// TODO: Successful/failed messages need to be marked in our local DB
-// Process:
-// 1) Send cmd_user request in attempt to ensure user exists.
-// 2)
 func (c *Client) cmdMsgTo(m *models.Message) {
-	// We need to get our recipients deets so we can encrypt our message
-	_, err := c.Send(plib.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
-		Username: m.To,
+	// Attempt to send our message
+	_, err := c.Send(plib.CMD_MSGTO, utils.MarshalResponse(&models.MsgToRequestModel{
+		Message: *m,
 	}))
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 }
 
@@ -175,7 +173,7 @@ func (c *Client) cmdMsgTo(m *models.Message) {
 func (c *Client) svrRegister(p []byte) error {
 	var regObj models.RegisterResponseModel
 	if err := json.Unmarshal(p, &regObj); err != nil {
-		panic("unable to unmarshal packet")
+		app.Stop()
 	}
 	if !regObj.Success {
 		showError(ClientError{
@@ -224,8 +222,23 @@ func (c *Client) svrLogin(p []byte) {
 	drawContactsList()
 }
 
-func (c *Client) svrMsgTo() {
-
+func (c *Client) svrMsgTo(p []byte) {
+	var msgObj models.MsgToResponseModel
+	if err := json.Unmarshal(p, &msgObj); err != nil {
+		log.Debug("unable to unmarshal packet")
+		return
+	}
+	// Make sure our response object was successful
+	if !msgObj.Success {
+		showError(ClientError{
+			Message: msgObj.Message,
+			Button:  "Continue",
+			Continue: func() {
+				pages.SwitchToPage("inbox")
+			},
+		})
+		return
+	}
 }
 
 // svrUser - User Object response from network and update our local DB

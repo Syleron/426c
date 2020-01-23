@@ -138,7 +138,7 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 	// Make sure our user is online otherwise fail
 	if _, ok := s.clients[msgObj.Message.To]; !ok {
 		log.Debug("unable to send message as user is offline")
-		c.Send(plib.SVR_USER, utils.MarshalResponse(&models.MsgToResponseModel{
+		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 			Success: false,
 			Message: "Unable to send message as user is offline",
 		}))
