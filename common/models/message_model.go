@@ -27,3 +27,7 @@ type MsgToResponseModel struct {
 	Success bool   `json:"success,omitempty"`
 	Message string `json:"message,omitempty"`
 }
+
+type MsgRequestModel struct {}
+
+type MsgResponseModel struct {}

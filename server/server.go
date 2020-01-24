@@ -29,6 +29,7 @@ import (
 // TODO - Proper Server -> Client error handling
 // TODO - Session timeout
 // TODO - Make sure you cannot send a message to yourself
+// TODO - Prevent multiple logins, logout the previous session
 
 // Username -> keys
 // Store keys with server
@@ -135,15 +136,22 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		log.Debug("unable to unmarshal packet")
 		return
 	}
-	// Make sure our user is online otherwise fail
-	if _, ok := s.clients[msgObj.Message.To]; !ok {
-		log.Debug("unable to send message as user is offline")
-		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
-			Success: false,
-			Message: "Unable to send message as user is offline",
-		}))
+	// Make sure we have a username to send to
+	if msgObj.Message.To == "" {
+		log.Debug("unable to send message. user not specified")
 		return
 	}
+	// Make sure our user is online
+	if _, ok := s.clients[msgObj.Message.To]; !ok {
+		log.Debug("unable to send message as user is offline")
+		return
+	}
+	// Send our message to our recipient
+	s.clients[msgObj.Message.To].Send(plib.SVR_MSGTO, utils.MarshalResponse())
+	// reply to our sender to say it was successful
+	c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
+		Success: true,
+	}))
 }
 
 func (s *Server) cmdUser(c *Client, p []byte) {
@@ -227,6 +235,7 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		}))
 		return
 	}
+	// TODO: Check to see if we are already logged in, disconnect any other session.
 	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 		Username: loginObj.Username,
 		Success: true,

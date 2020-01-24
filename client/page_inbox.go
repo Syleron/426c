@@ -21,9 +21,6 @@ func InboxPage() (id string, content tview.Primitive) {
 	userGrid := tview.NewFlex()
 	chatGrid := tview.NewFlex()
 
-	//userGrid.SetBorder(true)
-	//userGrid.SetBorderPadding(1,1,1,1,)
-
 	chatGrid.SetBorder(true)
 	chatGrid.SetBorderPadding(1, 1, 1, 1)
 
@@ -42,17 +39,6 @@ func InboxPage() (id string, content tview.Primitive) {
 	userListContainer.SetBorder(true)
 	userListContainer.SetBorderPadding(1, 1, 1, 1)
 
-	//SetFixed(1, 1)
-	//SetDynamicColors(true).
-	//SetRegions(true).
-	//SetWordWrap(true).
-	//SetChangedFunc(func() {
-	//	app.Draw()
-	//})
-
-	//userListContainer.SetCell(0, 0, tview.NewTableCell("Willifer (Online)"))
-	//userListContainer.SetCell(1, 0, tview.NewTableCell("Haroto (Offline)"))
-
 	inputField = tview.NewInputField().
 		SetPlaceholder("Send message...").
 		//SetAcceptanceFunc(tview.InputFieldInteger).
@@ -65,10 +51,6 @@ func InboxPage() (id string, content tview.Primitive) {
 				//r, c := chatContainer.GetScrollOffset()
 				//chatContainer.ScrollTo(r + 1, c)
 			case tcell.KeyEnter:
-				//sockets.Emit(&common.Message{
-				//	EventName: "chat",
-				//	Data:      []byte(`{"message":"` + inputField.GetText() + `", "channel": "general"}`),
-				//})
 				//inputField.SetText("")
 			}
 		})
@@ -130,7 +112,7 @@ func drawContactsList() {
 	// Get our contacts from our db
 	users, err := dbUserList()
 	if err != nil {
-		panic(err)
+		app.Stop()
 	}
 	// List all of our contacts in our local DB
 	for _, user := range users {

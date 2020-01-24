@@ -10,6 +10,9 @@ import (
 
 // dbMessageAdd - Add a message to our data store
 func dbMessageAdd(m *models.Message) error {
+	if db == nil {
+		return nil
+	}
 	// make sure our bucket exists before attempting to add a message
 	db.CreateBucket(m.To)
 	// Attempt to add our message
@@ -31,6 +34,9 @@ func dbMessageAdd(m *models.Message) error {
 }
 
 func dbUserList() ([]models.User, error) {
+	if db == nil {
+		return []models.User{}, nil
+	}
 	response := []models.User{}
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("users"))
@@ -51,6 +57,9 @@ func dbUserList() ([]models.User, error) {
 }
 
 func dbUserAdd(u models.User) error {
+	if db == nil {
+		return nil
+	}
 	// make sure our bucket exists before attempting to add a message
 	db.CreateBucket("users")
 	// Check to see if our user exists
@@ -77,6 +86,9 @@ func dbUserAdd(u models.User) error {
 }
 
 func dbUserGet(username string) (models.User, error) {
+	if db == nil {
+		return models.User{}, nil
+	}
 	var user models.User
 	var ub []byte
 	err := db.View(func(tx *bolt.Tx) error {

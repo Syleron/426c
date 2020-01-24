@@ -230,15 +230,10 @@ func (c *Client) svrMsgTo(p []byte) {
 	}
 	// Make sure our response object was successful
 	if !msgObj.Success {
-		showError(ClientError{
-			Message: msgObj.Message,
-			Button:  "Continue",
-			Continue: func() {
-				pages.SwitchToPage("inbox")
-			},
-		})
+		// TODO: Requeue the message to be resent
 		return
 	}
+	// TODO: Mark the message successful
 }
 
 // svrUser - User Object response from network and update our local DB

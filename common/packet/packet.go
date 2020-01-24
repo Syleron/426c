@@ -20,6 +20,7 @@ const (
 	CMD_LOGIN
 	CMD_SEARCH
 	CMD_USER
+	CMD_MSG
 
 	// Server Responses
 	SVR_NOTICE
@@ -29,6 +30,7 @@ const (
 	SVR_REGISTER
 	SVR_ERROR
 	SVR_USER
+	SVR_MSG
 )
 
 const HEADER_BYTE byte = '\xde'
