@@ -9,20 +9,23 @@ import (
 )
 
 // dbMessageAdd - Add a message to our data store
-func dbMessageAdd(m *models.Message) error {
+func dbMessageAdd(m *models.Message) (int, error) {
+	var msgID int
 	if db == nil {
-		return nil
+		return 0, nil
 	}
 	// make sure our bucket exists before attempting to add a message
 	db.CreateBucket(m.To)
 	// Attempt to add our message
-	return db.Update(func(tx *bolt.Tx) error {
+	return msgID, db.Update(func(tx *bolt.Tx) error {
 		// Retrieve the users bucket.
 		b := tx.Bucket([]byte(m.To))
 		// Generate ID for the user.
 		id, _ := b.NextSequence()
 		// Set our ID
 		m.ID = int(id)
+		// Set our local var
+		msgID = m.ID
 		// Marshal user data into bytes.
 		buf, err := json.Marshal(m)
 		if err != nil {

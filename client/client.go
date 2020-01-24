@@ -73,6 +73,8 @@ func (c *Client) commandRouter(p []byte) {
 		c.svrUser(p[1:])
 	case plib.SVR_MSGTO:
 		c.svrMsgTo(p[1:])
+	case plib.SVR_MSG:
+		c.svrMsg(p[1:])
 	default:
 	}
 }
@@ -220,6 +222,18 @@ func (c *Client) svrLogin(p []byte) {
 	pages.SwitchToPage("inbox")
 	// get our contacts
 	drawContactsList()
+}
+
+func (c *Client) svrMsg(p []byte) {
+	var msgObj models.MsgResponseModel
+	if err := json.Unmarshal(p, &msgObj); err != nil {
+		log.Debug("unable to unmarshal packet")
+		return
+	}
+	// Mark our message as being received successfully
+	msgObj.Success = true
+	// Add our message to our local DB
+	dbMessageAdd(&msgObj.Message)
 }
 
 func (c *Client) svrMsgTo(p []byte) {

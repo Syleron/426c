@@ -193,9 +193,13 @@ func submitMessage(toUser string, message string) {
 	}
 
 	// Add our message to our local DB
-	if err := dbMessageAdd(msgObj); err != nil {
+	id, err := dbMessageAdd(msgObj)
+	if err != nil {
 		panic(err)
 	}
+
+	// Update our object with our db ID
+	msgObj.ID = id
 
 	// Add our message to our message queue to send/process
 	client.MQ.Add(msgObj)
