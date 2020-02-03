@@ -150,8 +150,11 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		log.Debug("unable to send message as user is offline")
 		return
 	}
+	// Set any data
+	msgObj.From = c.Username
+	msgObj.Date = time.Now()
 	// Send our message to our recipient
-	s.clients[msgObj.To].Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgResponseModel{
+	s.clients[msgObj.To].Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
 		Message: msgObj.Message,
 	}))
 	// reply to our sender to say it was successful
@@ -242,6 +245,8 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		}))
 		return
 	}
+	// Set our connection details
+	c.Username = loginObj.Username
 	// TODO: Check to see if we are already logged in, disconnect any other session.
 	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 		Username: loginObj.Username,

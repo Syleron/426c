@@ -58,3 +58,7 @@ func decryptRSA(message string, addData []byte, key []byte) (string, error) {
 	}
 	return string(plaintext), nil
 }
+
+func decryptMessage(string) {
+
+}

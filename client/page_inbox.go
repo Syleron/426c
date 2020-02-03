@@ -1,17 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gdamore/tcell"
+	"github.com/olekukonko/tablewriter"
 	"github.com/rivo/tview"
 )
 
 var (
-	messageContainer  *tview.TextView
 	userListContainer *tview.Table
-	inputField        *tview.InputField
 )
 
 func InboxPage() (id string, content tview.Primitive) {
+	var inputField *tview.InputField
+
 	grid := tview.NewGrid().
 		SetRows(1).
 		SetColumns(30, 0).
@@ -24,7 +26,7 @@ func InboxPage() (id string, content tview.Primitive) {
 	chatGrid.SetBorder(true)
 	chatGrid.SetBorderPadding(1, 1, 1, 1)
 
-	messageContainer = tview.NewTextView().
+	messageContainer := tview.NewTextView().
 		SetDynamicColors(true).
 		SetRegions(true).
 		SetWordWrap(true).
@@ -33,11 +35,23 @@ func InboxPage() (id string, content tview.Primitive) {
 		})
 
 	messageContainer.SetScrollable(true)
-	//messageContainer.SetBorder(true)
 
 	userListContainer = tview.NewTable()
 	userListContainer.SetBorder(true)
 	userListContainer.SetBorderPadding(1, 1, 1, 1)
+	userListContainer.SetSelectable(true, true)
+
+	userListContainer.
+		SetSelectedFunc(func(row, column int) {
+			username := userListContainer.GetCell(row, column)
+			// Mark our selected left table cell
+			username.SetTextColor(tcell.ColorRed)
+			// Load our messages for the user
+			loadMessages(username.Text, messageContainer)
+			// Set focus on our message container
+			app.SetFocus(inputField)
+		},
+	)
 
 	inputField = tview.NewInputField().
 		SetPlaceholder("Send message...").
@@ -45,13 +59,13 @@ func InboxPage() (id string, content tview.Primitive) {
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
 			case tcell.KeyUp:
-				//r, c := chatContainer.GetScrollOffset()
-				//chatContainer.ScrollTo(r - 1, c)
+				r, c := messageContainer.GetScrollOffset()
+				messageContainer.ScrollTo(r - 1, c)
 			case tcell.KeyDown:
-				//r, c := chatContainer.GetScrollOffset()
-				//chatContainer.ScrollTo(r + 1, c)
+				r, c := messageContainer.GetScrollOffset()
+				messageContainer.ScrollTo(r + 1, c)
 			case tcell.KeyEnter:
-				//inputField.SetText("")
+				inputField.SetText("")
 			}
 		})
 
@@ -74,6 +88,7 @@ func InboxPage() (id string, content tview.Primitive) {
 			})
 		case tcell.KeyTAB:
 			app.SetFocus(userListContainer)
+			//userListContainer.Select(0, 0)
 		}
 		return event
 	})
@@ -98,8 +113,6 @@ func InboxPage() (id string, content tview.Primitive) {
 		AddItem(messageContainer, 0, 1, false).
 		AddItem(inputField, 1, 1, false), 0, 2, false)
 
-	messageContainer.SetScrollable(true)
-
 	// Get our contacts
 	drawContactsList()
 
@@ -115,7 +128,33 @@ func drawContactsList() {
 		app.Stop()
 	}
 	// List all of our contacts in our local DB
-	for _, user := range users {
-		userListContainer.SetCell(0, 0, tview.NewTableCell(user.Username))
+	for i, user := range users {
+		userListContainer.SetCell(i, 0, tview.NewTableCell(user.Username))
 	}
+}
+
+func loadMessages(username string, container *tview.TextView) {
+	// clear our messages
+	container.Clear()
+	// Get our messages
+	messages, err := dbMessagesGet(username, lUser)
+	if err != nil {
+		panic(err)
+	}
+	for _, message := range messages {
+		var fmsg string
+		// set default message color
+		fmsg += "[gray]"
+		// set receive color
+		if message.To == lUser {
+			fmsg += "[blue]"
+		}
+		// Set our time
+		fmsg += message.Date.Format("15:04:05") + " - "
+		// Set our message
+		fmsg += message.ToMessage
+
+		fmt.Fprintf(container,`%s %v`, fmsg, tablewriter.NEWLINE)
+	}
+	container.ScrollToEnd()
 }

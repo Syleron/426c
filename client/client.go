@@ -207,8 +207,10 @@ func (c *Client) svrLogin(p []byte) {
 		})
 		return
 	}
+	// Set our logged in user
+	lUser = loginObj.Username
 	// Load our private key
-	b, err := utils.LoadFile(loginObj.Username)
+	b, err := utils.LoadFile(lUser)
 	if err != nil {
 		showError(ClientError{
 			Message: "Login failed. Unable to load private key for " + loginObj.Username + ".",
@@ -233,7 +235,9 @@ func (c *Client) svrMsg(p []byte) {
 	// Mark our message as being received successfully
 	msgObj.Success = true
 	// Add our message to our local DB
-	dbMessageAdd(&msgObj.Message)
+	if _, err := dbMessageAdd(&msgObj.Message); err != nil {
+		panic(err)
+	}
 }
 
 func (c *Client) svrMsgTo(p []byte) {

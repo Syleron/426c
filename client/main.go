@@ -17,6 +17,7 @@ var (
 	client *Client
 	db     *database.Database
 	privKey string
+	lUser string
 )
 
 func header() *tview.TextView {

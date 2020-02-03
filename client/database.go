@@ -36,6 +36,37 @@ func dbMessageAdd(m *models.Message) (int, error) {
 	})
 }
 
+func dbMessagesGet(toUsername string, fromUsername string) ([]models.Message, error) {
+	if db == nil {
+		return nil, nil
+	}
+	var messages []models.Message
+
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(toUsername))
+		return b.ForEach(func(k, v []byte) error {
+			var found models.Message
+
+			// copy data into our issue object
+			if err := json.Unmarshal(v, &found); err != nil {
+				return err
+			}
+
+			// Make sure our from and to match
+			if found.To == toUsername && found.From == fromUsername ||
+				found.To == fromUsername && found.From == toUsername {
+				// Add our message to the array
+				messages = append(messages, found)
+			}
+
+			return nil
+		})
+	})
+
+	// return our issue
+	return messages, err
+}
+
 func dbUserList() ([]models.User, error) {
 	if db == nil {
 		return []models.User{}, nil

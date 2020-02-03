@@ -57,3 +57,33 @@ func loggedIn() bool {
 	return false
 	//return user.Token != ""
 }
+
+func startSpinner(button *tview.Button, action func()) {
+	done := make(chan bool)
+
+	go func() {
+		action()
+		done <- true
+		close(done)
+	}()
+
+	go func() {
+		spinners := []string{"|", "\\", "-", "/"}
+		var i int
+		for {
+			select {
+			case _ = <-done:
+				app.QueueUpdateDraw(func() {
+					button.SetLabel("Confirm")
+				})
+				return
+			case <-time.After(200 * time.Millisecond):
+				spin := i % len(spinners)
+				app.QueueUpdateDraw(func() {
+					button.SetLabel(spinners[spin] + " Loading")
+				})
+				i++
+			}
+		}
+	}()
+}

@@ -32,7 +32,7 @@ func ComposePage() (id string, content tview.Primitive) {
 	chatGrid.SetBorderPadding(1, 1, 1, 1)
 	chatGrid.SetTitle(" Compose New Message ")
 
-	messageContainer = tview.NewTextView().
+	messageContainer := tview.NewTextView().
 		SetDynamicColors(true).
 		SetRegions(true).
 		SetWordWrap(true).
@@ -188,7 +188,8 @@ func submitMessage(toUser string, message string) {
 		FromMessage: encFromMsg,
 		ToMessage: encToMsg,
 		To:      toUser,
-		Date:    time.Time{},
+		From: lUser,
+		Date:    time.Now(),
 		Success: false,
 	}
 
