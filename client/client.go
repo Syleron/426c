@@ -99,7 +99,7 @@ func (c *Client) cmdRegister(username string, password string) {
 		"rsa",
 		4096,
 	)
-	// TODO: Save our RSA Key
+	// save our key
 	if err := utils.WriteFile(rsaKey, username); err != nil{
 		app.Stop()
 	}
@@ -147,6 +147,8 @@ func (c *Client) cmdLogin(username string, password string) {
 		Password: hashRemainder,
 		Version:  VERSION,
 	}
+	// Set our local variables
+	pHash = hashString
 	// Send our username, hash remainder.
 	_, err := c.Send(
 		plib.CMD_LOGIN,

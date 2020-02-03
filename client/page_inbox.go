@@ -13,6 +13,7 @@ var (
 
 func InboxPage() (id string, content tview.Primitive) {
 	var inputField *tview.InputField
+	var selectedUsername string
 
 	grid := tview.NewGrid().
 		SetRows(1).
@@ -46,18 +47,26 @@ func InboxPage() (id string, content tview.Primitive) {
 			username := userListContainer.GetCell(row, column)
 			// Mark our selected left table cell
 			username.SetTextColor(tcell.ColorRed)
+			// Set our selected username
+			selectedUsername = username.Text
 			// Load our messages for the user
-			loadMessages(username.Text, messageContainer)
+			loadMessages(selectedUsername, messageContainer)
 			// Set focus on our message container
 			app.SetFocus(inputField)
 		},
 	)
 
 	inputField = tview.NewInputField().
-		SetPlaceholder("Send message...").
+		SetPlaceholder("Quick reply...").
 		//SetAcceptanceFunc(tview.InputFieldInteger).
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
+			case tcell.KeyESC:
+				app.SetFocus(userListContainer)
+				// reset selection
+				for i := 0; i < userListContainer.GetRowCount(); i++ {
+					userListContainer.GetCell(i, 0).SetTextColor(tcell.ColorWhite)
+				}
 			case tcell.KeyUp:
 				r, c := messageContainer.GetScrollOffset()
 				messageContainer.ScrollTo(r - 1, c)
@@ -65,7 +74,15 @@ func InboxPage() (id string, content tview.Primitive) {
 				r, c := messageContainer.GetScrollOffset()
 				messageContainer.ScrollTo(r + 1, c)
 			case tcell.KeyEnter:
+				if inputField.GetText() == "" {
+					return
+				}
+				// submit our message
+				submitMessage(selectedUsername, inputField.GetText())
+				// clear out our input
 				inputField.SetText("")
+				// reload our messages
+				loadMessages(selectedUsername, messageContainer)
 			}
 		})
 
@@ -88,7 +105,6 @@ func InboxPage() (id string, content tview.Primitive) {
 			})
 		case tcell.KeyTAB:
 			app.SetFocus(userListContainer)
-			//userListContainer.Select(0, 0)
 		}
 		return event
 	})
@@ -143,16 +159,34 @@ func loadMessages(username string, container *tview.TextView) {
 	}
 	for _, message := range messages {
 		var fmsg string
+		var color string
 		// set default message color
-		fmsg += "[gray]"
+		color = "[gray]"
 		// set receive color
 		if message.To == lUser {
-			fmsg += "[blue]"
+			color = "[blue]"
 		}
+		fmsg += color
 		// Set our time
-		fmsg += message.Date.Format("15:04:05") + " - "
+		fmsg += message.Date.Format("15:04:05")
+		// Set our message stats
+		if !message.Success {
+			fmsg += "[yellow] (P) " + color
+		} else {
+			fmsg += "[green] (S) " + color
+		}
+		// Set from/to
+		if message.To == lUser {
+			fmsg += "--> " + message.To
+		} else {
+			fmsg += "<-- " + message.From
+		}
 		// Set our message
-		fmsg += message.ToMessage
+		if message.To == lUser {
+			fmsg += "\n\n" +  decryptMessage(message.ToMessage) + "\n\n"
+		} else {
+			fmsg += "\n\n" + decryptMessage(message.FromMessage) + "\n\n"
+		}
 
 		fmt.Fprintf(container,`%s %v`, fmsg, tablewriter.NEWLINE)
 	}

@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	gopenpgp "github.com/ProtonMail/gopenpgp/crypto"
 	"io"
 )
 
@@ -59,6 +60,11 @@ func decryptRSA(message string, addData []byte, key []byte) (string, error) {
 	return string(plaintext), nil
 }
 
-func decryptMessage(string) {
-
+func decryptMessage(message string) string {
+	var pgp = gopenpgp.GetGopenPGP()
+	clearText, err := pgp.DecryptMessageStringKey(message, privKey, pHash)
+	if err != nil {
+		panic(err)
+	}
+	return clearText
 }

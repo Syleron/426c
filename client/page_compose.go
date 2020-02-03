@@ -42,7 +42,7 @@ func ComposePage() (id string, content tview.Primitive) {
 
 	messageContainer.SetScrollable(true)
 
-	buffer := femto.NewBufferFromString("\n\n------\nThis is an encrypted message sent via 426c", "")
+	buffer := femto.NewBufferFromString("", "")
 	inputField := femto.NewView(buffer)
 
 	toInputField := tview.NewInputField().

@@ -16,8 +16,15 @@ var (
 	layout *tview.Flex
 	client *Client
 	db     *database.Database
-	privKey string
+
+	// TODO: Move user details somewhere else
+	// Logged in username
 	lUser string
+	// User password hash used to decrypt w/ private key.
+	// TODO: Not sure if this should be done or not. Seems iffy.
+	pHash string
+	// Logged in user private key
+	privKey string
 )
 
 func header() *tview.TextView {
