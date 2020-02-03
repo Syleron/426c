@@ -57,6 +57,8 @@ func ComposePage() (id string, content tview.Primitive) {
 	// Send button
 	sendButton := tview.NewButton("Send Message").SetSelectedFunc(func() {
 		submitMessage(toInputField.GetText(), buffer.String())
+		// Switch back to our inbox
+		pages.SwitchToPage("inbox")
 	})
 	sendButton.SetBorder(true).SetRect(0, 0, 0, 1)
 
@@ -207,7 +209,4 @@ func submitMessage(toUser string, message string) {
 
 	// Process our message queue
 	go client.MQ.Process()
-
-	// Switch back to our inbox
-	pages.SwitchToPage("inbox")
 }

@@ -57,7 +57,7 @@ func InboxPage() (id string, content tview.Primitive) {
 	)
 
 	inputField = tview.NewInputField().
-		SetPlaceholder("Quick reply...").
+		SetPlaceholder("Send message...").
 		//SetAcceptanceFunc(tview.InputFieldInteger).
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
@@ -160,32 +160,26 @@ func loadMessages(username string, container *tview.TextView) {
 	for _, message := range messages {
 		var fmsg string
 		var color string
-		// set default message color
 		color = "[gray]"
-		// set receive color
-		if message.To == lUser {
-			color = "[blue]"
-		}
-		fmsg += color
-		// Set our time
-		fmsg += message.Date.Format("15:04:05")
 		// Set our message stats
 		if !message.Success {
-			fmsg += "[yellow] (P) " + color
+			fmsg += "[red]! " + color
 		} else {
-			fmsg += "[green] (S) " + color
+			fmsg += color
 		}
+		// Set our time
+		fmsg += message.Date.Format("15:04:05")
 		// Set from/to
 		if message.To == lUser {
-			fmsg += "--> " + message.To
+			fmsg += " <[white]" + message.To + color +  "> "
 		} else {
-			fmsg += "<-- " + message.From
+			fmsg += " <[darkcyan]" + message.From + color + "> "
 		}
 		// Set our message
 		if message.To == lUser {
-			fmsg += "\n\n" +  decryptMessage(message.ToMessage) + "\n\n"
+			fmsg += decryptMessage(message.ToMessage)
 		} else {
-			fmsg += "\n\n" + decryptMessage(message.FromMessage) + "\n\n"
+			fmsg += decryptMessage(message.FromMessage)
 		}
 
 		fmt.Fprintf(container,`%s %v`, fmsg, tablewriter.NEWLINE)

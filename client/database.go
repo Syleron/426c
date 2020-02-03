@@ -47,6 +47,11 @@ func dbMessagesGet(toUsername string, fromUsername string) ([]models.Message, er
 		return b.ForEach(func(k, v []byte) error {
 			var found models.Message
 
+			// only return 50 messages
+			if len(messages) >= 50 {
+				return nil
+			}
+
 			// copy data into our issue object
 			if err := json.Unmarshal(v, &found); err != nil {
 				return err
