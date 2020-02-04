@@ -247,6 +247,13 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 	}
 	// Set our connection details
 	c.Username = loginObj.Username
+	// Add client to our online list
+	if user, ok := s.clients[c.Username]; ok {
+		user.Conn.Close()
+	}
+	if err := s.clientAdd(c.Username, c); err != nil {
+		log.Error(err)
+	}
 	// TODO: Check to see if we are already logged in, disconnect any other session.
 	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 		Username: loginObj.Username,
