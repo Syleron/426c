@@ -254,7 +254,6 @@ func (c *Client) svrMsgTo(p []byte) {
 		return
 	}
 	// TODO: Mark the message successful
-
 }
 
 // svrUser - User Object response from network and update our local DB

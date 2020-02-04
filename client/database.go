@@ -36,6 +36,19 @@ func dbMessageAdd(m *models.Message) (int, error) {
 	})
 }
 
+func dbMessageGetByID(id int, toUsername string) (models.Message, error) {
+	var message models.Message
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(toUsername))
+		v := b.Get(itob(id))
+		if err := json.Unmarshal(v, &message); err != nil {
+			return err
+		}
+		return nil
+	})
+	return message, err
+}
+
 func dbMessagesGet(toUsername string, fromUsername string) ([]models.Message, error) {
 	if db == nil {
 		return nil, nil

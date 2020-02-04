@@ -161,6 +161,7 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 	c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 		Success: true,
 		MsgID: msgObj.ID,
+		To: msgObj.To,
 	}))
 }
 
