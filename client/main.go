@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/database"
 	"github.com/syleron/426c/common/security"
@@ -33,7 +34,9 @@ func header() *tview.TextView {
 		SetRegions(true).
 		SetWrap(false)
 
-	fmt.Fprintf(head, `[:bu]░ [yellow]426c [white]Network `)
+	//head.SetBackgroundColor(tcell.ColorGray)
+
+	fmt.Fprintf(head, `░ [yellow]426c [gray]Network `)
 
 	return head
 }
@@ -44,6 +47,8 @@ func footer() *tview.TextView {
 		SetRegions(true).
 		SetTextAlign(tview.AlignRight).
 		SetWrap(false)
+
+	foot.SetBackgroundColor(tcell.NewRGBColor(48, 48, 48))
 
 	// Do it first
 	fmt.Fprintf(foot, " [_] "+strconv.Itoa(getBlocks())+" ")

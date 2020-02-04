@@ -273,6 +273,10 @@ func (c *Client) svrUser(p []byte) {
 	}
 	// Insert our user into our local DB
 	dbUserAdd(userObj.User)
+	// Reset UI
+	inboxToField.SetText("")
+	app.SetFocus(userListContainer)
+	app.Draw() // force draw to speed up the changes
 }
 
 func (c *Client) Close() {}

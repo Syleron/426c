@@ -5,10 +5,14 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rivo/tview"
+	"github.com/syleron/426c/common/models"
+	"github.com/syleron/426c/common/packet"
+	"github.com/syleron/426c/common/utils"
 )
 
 var (
 	userListContainer *tview.Table
+	inboxToField *tview.InputField
 )
 
 func InboxPage() (id string, content tview.Primitive) {
@@ -17,15 +21,17 @@ func InboxPage() (id string, content tview.Primitive) {
 
 	grid := tview.NewGrid().
 		SetRows(1).
-		SetColumns(30, 0).
+		SetColumns(20, 0).
 		SetBorders(false).
-		SetGap(0, 2)
+		SetGap(0, 1)
 
 	userGrid := tview.NewFlex()
 	chatGrid := tview.NewFlex()
 
-	chatGrid.SetBorder(true)
-	chatGrid.SetBorderPadding(1, 1, 1, 1)
+	chatGrid.SetBorder(false)
+
+	userGrid.SetBorderPadding(0, 1, 0, 0)
+	chatGrid.SetBorderPadding(0, 1, 0, 0)
 
 	messageContainer := tview.NewTextView().
 		SetDynamicColors(true).
@@ -38,8 +44,8 @@ func InboxPage() (id string, content tview.Primitive) {
 	messageContainer.SetScrollable(true)
 
 	userListContainer = tview.NewTable()
-	userListContainer.SetBorder(true)
-	userListContainer.SetBorderPadding(1, 1, 1, 1)
+	userListContainer.SetBorder(false)
+	userListContainer.SetBorderPadding(1, 0, 0, 0)
 	userListContainer.SetSelectable(true, true)
 
 	userListContainer.
@@ -92,17 +98,13 @@ func InboxPage() (id string, content tview.Primitive) {
 	})
 	composeButton.SetBorder(true).SetRect(0, 0, 0, 1)
 
+	inboxToField = tview.NewInputField().
+		SetPlaceholder("Search user")
+
 	composeButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyESC:
-			showModal(ClientModal{
-				Message:      "Are you sure you would like to disconnect from the 426c network?",
-				SubmitButton: "Exit",
-				CancelButton: "Cancel",
-				Continue: func() {
-					app.Stop()
-				},
-			})
+			inboxQuitModal()
 		case tcell.KeyTAB:
 			app.SetFocus(userListContainer)
 		}
@@ -112,17 +114,35 @@ func InboxPage() (id string, content tview.Primitive) {
 	userListContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB:
-			app.SetFocus(composeButton)
+			app.SetFocus(inboxToField)
+		}
+		return event
+	})
+
+	inboxToField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyTAB:
+			app.SetFocus(userListContainer)
+		case tcell.KeyESC:
+			inboxQuitModal()
+		case tcell.KeyEnter:
+			// Check if user exists and get public key details
+			_, err := client.Send(packet.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
+				Username: inboxToField.GetText(),
+			}))
+			if err != nil {
+				panic(err)
+			}
 		}
 		return event
 	})
 
 	// Layout for screens wider than 100 cells.
-	grid.AddItem(userGrid, 1, 0, 1, 1, 0, 100, true).
+	grid.AddItem(userGrid, 1, 0, 1, 1, 0, 50, true).
 		AddItem(chatGrid, 1, 1, 1, 1, 0, 100, false)
 
 	userGrid.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(composeButton, 3, 1, true).
+		AddItem(inboxToField, 1, 1, true).
 		AddItem(userListContainer, 0, 1, true), 0, 2, true)
 
 	chatGrid.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
@@ -145,7 +165,9 @@ func drawContactsList() {
 	}
 	// List all of our contacts in our local DB
 	for i, user := range users {
-		userListContainer.SetCell(i, 0, tview.NewTableCell(user.Username))
+		if user.Username != lUser {
+			userListContainer.SetCell(i, 0, tview.NewTableCell(user.Username))
+		}
 	}
 }
 
@@ -153,10 +175,8 @@ func loadMessages(username string, container *tview.TextView) {
 	// clear our messages
 	container.Clear()
 	// Get our messages
-	messages, err := dbMessagesGet(username, lUser)
-	if err != nil {
-		panic(err)
-	}
+	messages, _ := dbMessagesGet(username, lUser)
+	reverseAny(messages)
 	for _, message := range messages {
 		var fmsg string
 		var color string
@@ -185,4 +205,15 @@ func loadMessages(username string, container *tview.TextView) {
 		fmt.Fprintf(container,`%s %v`, fmsg, tablewriter.NEWLINE)
 	}
 	container.ScrollToEnd()
+}
+
+func inboxQuitModal() {
+	showModal(ClientModal{
+		Message:      "Are you sure you would like to disconnect from the 426c network?",
+		SubmitButton: "Exit",
+		CancelButton: "Cancel",
+		Continue: func() {
+			app.Stop()
+		},
+	})
 }

@@ -44,7 +44,14 @@ func dbMessagesGet(toUsername string, fromUsername string) ([]models.Message, er
 
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(toUsername))
-		return b.ForEach(func(k, v []byte) error {
+
+		if b == nil {
+			return errors.New("bucket doesn't exist")
+		}
+
+		c := b.Cursor()
+
+		for k, v := c.Last(); k != nil; k, v = c.Prev() {
 			var found models.Message
 
 			// only return 50 messages
@@ -63,9 +70,8 @@ func dbMessagesGet(toUsername string, fromUsername string) ([]models.Message, er
 				// Add our message to the array
 				messages = append(messages, found)
 			}
-
-			return nil
-		})
+		}
+		return nil
 	})
 
 	// return our issue
