@@ -197,7 +197,7 @@ func loadMessages(username string, container *tview.TextView) {
 		fmsg += message.Date.Format("15:04:05")
 		// Set from/to
 		if message.To == lUser {
-			fmsg += " <[]" + message.From + color +  "> [lightgray]"
+			fmsg += " <[darkmagenta]" + message.From + color +  "> [lightgray]"
 		} else {
 			fmsg += " <[darkcyan]" + message.From + color + "> [lightgray]"
 		}
