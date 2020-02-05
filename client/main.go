@@ -108,6 +108,6 @@ func mainLoadPrivateKey() {
 	if err != nil {
 		panic(err)
 	}
-	// Set our privact key
+	// Set our private key
 	privKey = string(b)
 }

@@ -54,11 +54,6 @@ func getTimeNow() string {
 	return now
 }
 
-func loggedIn() bool {
-	return false
-	//return user.Token != ""
-}
-
 func startSpinner(button *tview.Button, action func()) {
 	done := make(chan bool)
 

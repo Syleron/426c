@@ -1,13 +1,16 @@
 package main
 
 import (
+	gopenpgp "github.com/ProtonMail/gopenpgp/crypto"
 	"github.com/gdamore/tcell"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/models"
 	"github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
+	"strings"
 	"sync"
+	"time"
 )
 
 var (
@@ -23,7 +26,7 @@ func InboxPage() (id string, content tview.Primitive) {
 
 	grid := tview.NewGrid().
 		SetRows(1).
-		SetColumns(20, 0).
+		SetColumns(15, 0).
 		SetBorders(false).
 		SetGap(0, 1)
 
@@ -150,7 +153,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		AddItem(inputField, 1, 1, false), 0, 2, false)
 
 	// Get our contacts
-	drawContactsList()
+	go drawContactsList()
 
 	return "inbox", grid
 }
@@ -184,6 +187,10 @@ func loadMessages(username string, container *tview.TextView) {
 	for _, message := range messages {
 		var fmsg string
 		var color string
+		if !message.Success {
+			// Add our message to our message queue to send/process
+			client.MQ.Add(&message)
+		}
 		color = "[gray]"
 		// Set our message stats
 		if !message.Success {
@@ -212,6 +219,8 @@ func loadMessages(username string, container *tview.TextView) {
 	// Set our new message
 	container.SetText(result)
 	container.ScrollToEnd()
+	// Process our message queue
+	go client.MQ.Process()
 }
 
 func inboxQuitModal() {
@@ -223,4 +232,75 @@ func inboxQuitModal() {
 			app.Stop()
 		},
 	})
+}
+
+func submitMessage(toUser string, message string) {
+	var pgp = gopenpgp.GetGopenPGP()
+
+	// Make sure we have this user in our local DB to encrypt
+	usrObj, err := dbUserGet(toUser)
+	if err != nil {
+		showError(ClientError{
+			Message:  "Unable to submit message to user as it does not exist",
+			Button:   "Continue",
+		})
+		return
+	}
+
+	// Encrypt message using our recipients public key
+	toKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(usrObj.PubKey))
+	if err != nil {
+		panic(err)
+	}
+	encToMsg, err := pgp.EncryptMessage(
+		message,
+		toKeyRing,
+		nil,
+		"",
+		false,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Encrypt our message using our details
+	fromKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(privKey))
+	if err != nil {
+		panic(err)
+	}
+	encFromMsg, err := pgp.EncryptMessage(
+		message,
+		fromKeyRing,
+		nil,
+		"",
+		false,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Define our message object
+	msgObj := &models.Message{
+		FromMessage: encFromMsg,
+		ToMessage: encToMsg,
+		To:      toUser,
+		From: lUser,
+		Date:    time.Now(),
+		Success: false,
+	}
+
+	// Add our message to our local DB
+	id, err := dbMessageAdd(msgObj)
+	if err != nil {
+		panic(err)
+	}
+
+	// Update our object with our db ID
+	msgObj.ID = id
+
+	// Add our message to our message queue to send/process
+	client.MQ.Add(msgObj)
+
+	// Process our message queue
+	go client.MQ.Process()
 }

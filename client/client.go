@@ -74,8 +74,10 @@ func (c *Client) commandRouter(p []byte) {
 	case plib.SVR_MSGTO:
 		c.svrMsgTo(p[1:])
 	case plib.SVR_MSG:
+		panic("tits")
 		c.svrMsg(p[1:])
 	default:
+		panic("balls")
 	}
 }
 
@@ -225,10 +227,11 @@ func (c *Client) svrLogin(p []byte) {
 	// Success, switch pages
 	pages.SwitchToPage("inbox")
 	// get our contacts
-	drawContactsList()
+	go drawContactsList()
 }
 
 func (c *Client) svrMsg(p []byte) {
+	panic("balls")
 	var msgObj models.MsgResponseModel
 	if err := json.Unmarshal(p, &msgObj); err != nil {
 		log.Debug("unable to unmarshal packet")
@@ -240,7 +243,6 @@ func (c *Client) svrMsg(p []byte) {
 	if _, err := dbMessageAdd(&msgObj.Message); err != nil {
 		panic(err)
 	}
-	panic("balls")
 	// reload our message container
 	go loadMessages(msgObj.From, inboxMessageContainer)
 }

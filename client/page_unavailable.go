@@ -4,6 +4,7 @@ import (
 	"github.com/rivo/tview"
 )
 
+// TODO: Convert to modal
 func UnavailablePage() (id string, content tview.Primitive) {
 	modal := tview.NewModal().
 		SetText("Unable to communicate with the 426c network. Please try again later.").

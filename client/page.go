@@ -11,7 +11,6 @@ var (
 		RegisterPage,
 		RegisterWarningPage,
 		InboxPage,
-		ComposePage,
 		UnavailablePage,
 	}
 )

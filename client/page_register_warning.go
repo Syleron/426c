@@ -2,6 +2,7 @@ package main
 
 import "github.com/rivo/tview"
 
+// TODO: Convert to modal
 func RegisterWarningPage() (id string, content tview.Primitive) {
 	modal := tview.NewModal().
 		SetText("Your encryption is only as good as your password.").

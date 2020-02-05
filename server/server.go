@@ -18,7 +18,6 @@ import (
 // Length of the user connected gives them currency
 // Register user onto the network using their public key
 
-// TODO - Registering user onto the network - DONE
 // TODO - Creating groups (Permanent or not?) (Protected?)
 // TODO - Distribution of "blocks"
 // TODO - Charge blocks for sending a message
@@ -26,10 +25,8 @@ import (
 // TODO - Client/Server Version Validation
 // TODO - Pending messages for offline people
 // TODO - Prevent people from sending plain text
-// TODO - Proper Server -> Client error handling
 // TODO - Session timeout
 // TODO - Make sure you cannot send a message to yourself
-// TODO - Prevent multiple logins, logout the previous session
 // TODO - Rate limit connection
 
 // Username -> keys
@@ -158,9 +155,15 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 	msgObj.From = c.Username
 	msgObj.Date = time.Now()
 	// Send our message to our recipient
-	s.clients[msgObj.To].Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
+	_, err := s.clients[msgObj.To].Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
 		Message: msgObj.Message,
 	}))
+	if err != nil {
+		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
+			Success: false,
+		}))
+		return
+	}
 	// reply to our sender to say it was successful
 	c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 		Success: true,
