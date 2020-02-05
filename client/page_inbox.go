@@ -284,7 +284,7 @@ func submitMessage(toUser string, message string) {
 	}
 
 	// Add our message to our local DB
-	id, err := dbMessageAdd(msgObj)
+	id, err := dbMessageAdd(msgObj, msgObj.To)
 	if err != nil {
 		panic(err)
 	}

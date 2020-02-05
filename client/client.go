@@ -74,7 +74,6 @@ func (c *Client) commandRouter(p []byte) {
 	case plib.SVR_MSGTO:
 		c.svrMsgTo(p[1:])
 	case plib.SVR_MSG:
-		panic("tits")
 		c.svrMsg(p[1:])
 	default:
 		panic("balls")
@@ -239,7 +238,7 @@ func (c *Client) svrMsg(p []byte) {
 	// Mark our message as being received successfully
 	msgObj.Success = true
 	// Add our message to our local DB
-	if _, err := dbMessageAdd(&msgObj.Message); err != nil {
+	if _, err := dbMessageAdd(&msgObj.Message, msgObj.From); err != nil {
 		panic(err)
 	}
 	// reload our message container
