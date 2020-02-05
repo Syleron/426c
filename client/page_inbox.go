@@ -18,11 +18,12 @@ var (
 	userListContainer *tview.Table
 	inboxToField *tview.InputField
 	inboxMessageContainerLock sync.Mutex
+	inboxSelectedUsername string
+	inboxFailedMessageCount int
 )
 
 func InboxPage() (id string, content tview.Primitive) {
 	var inputField *tview.InputField
-	var selectedUsername string
 
 	grid := tview.NewGrid().
 		SetRows(1).
@@ -53,20 +54,6 @@ func InboxPage() (id string, content tview.Primitive) {
 	userListContainer.SetBorderPadding(1, 0, 0, 0)
 	userListContainer.SetSelectable(true, true)
 
-	userListContainer.
-		SetSelectedFunc(func(row, column int) {
-			username := userListContainer.GetCell(row, column)
-			// Mark our selected left table cell
-			username.SetTextColor(tcell.ColorRed)
-			// Set our selected username
-			selectedUsername = username.Text
-			// Load our messages for the user
-			go loadMessages(selectedUsername, inboxMessageContainer)
-			// Set focus on our message container
-			app.SetFocus(inputField)
-		},
-	)
-
 	inputField = tview.NewInputField().
 		SetPlaceholder("Send message...").
 		//SetAcceptanceFunc(tview.InputFieldInteger).
@@ -89,7 +76,7 @@ func InboxPage() (id string, content tview.Primitive) {
 					return
 				}
 				// submit our message
-				submitMessage(selectedUsername, inputField.GetText())
+				submitMessage(inboxSelectedUsername, inputField.GetText())
 				// clear out our input
 				inputField.SetText("")
 			}
@@ -118,6 +105,18 @@ func InboxPage() (id string, content tview.Primitive) {
 		switch event.Key() {
 		case tcell.KeyTAB:
 			app.SetFocus(inboxToField)
+		case tcell.KeyEnter:
+			row, column := userListContainer.GetOffset()
+			username := userListContainer.GetCell(row, column)
+			// Mark our selected left table cell
+			username.SetTextColor(tcell.ColorRed)
+			// Set our selected username
+			inboxSelectedUsername = username.Text
+			// Load our messages for the user
+			go loadMessages(inboxSelectedUsername, inboxMessageContainer)
+			go inboxRetryFailedMessages(inboxSelectedUsername)
+			// Set focus on our message container
+			app.SetFocus(inputField)
 		}
 		return event
 	})
@@ -174,9 +173,9 @@ func drawContactsList() {
 			count++
 		}
 	}
+	app.Draw()
 }
 
-// TODO: Queue unsuccessful messages
 func loadMessages(username string, container *tview.TextView) {
 	inboxMessageContainerLock.Lock()
 	defer inboxMessageContainerLock.Unlock()
@@ -215,6 +214,19 @@ func loadMessages(username string, container *tview.TextView) {
 	// Set our new message
 	container.SetText(result)
 	container.ScrollToEnd()
+}
+
+func inboxRetryFailedMessages(username string) {
+	// reset counter
+	inboxFailedMessageCount = 0
+	// Get our messages
+	messages, _ := dbMessagesGet(username, lUser)
+	reverseAny(messages)
+	for _, message := range messages {
+		if !message.Success {
+			client.cmdMsgTo(&message) // retry message
+		}
+	}
 }
 
 func inboxQuitModal() {
@@ -280,7 +292,7 @@ func submitMessage(toUser string, message string) {
 		To:      toUser,
 		From: lUser,
 		Date:    time.Now(),
-		Success: false,
+		Success: true,
 	}
 
 	// Add our message to our local DB
@@ -292,9 +304,5 @@ func submitMessage(toUser string, message string) {
 	// Update our object with our db ID
 	msgObj.ID = id
 
-	// Add our message to our message queue to send/process
-	client.MQ.Add(msgObj)
-
-	// Process our message queue
-	go client.MQ.Process()
+	client.cmdMsgTo(msgObj)
 }

@@ -19,7 +19,6 @@ type Client struct {
 	Reader *bufio.Reader
 	Writer *bufio.Writer
 	Conn   net.Conn
-	MQ     *MessageQueue
 }
 
 func setupClient() (*Client, error) {
@@ -44,7 +43,6 @@ func setupClient() (*Client, error) {
 		Writer: bufio.NewWriter(conn),
 		Reader: bufio.NewReader(conn),
 		Conn:   conn,
-		MQ:     NewMessageQueue(),
 	}
 	// Put our handlers into a go routine
 	go c.connectionHandler()
@@ -162,6 +160,10 @@ func (c *Client) cmdLogin(username string, password string) {
 
 // cmdMsgTo - Send a private encrypted message to a particular user
 func (c *Client) cmdMsgTo(m *models.Message) {
+	// Retry failed messages
+	if inboxFailedMessageCount > 0 {
+		inboxRetryFailedMessages(m.To)
+	}
 	// Attempt to send our message
 	_, err := c.Send(plib.CMD_MSGTO, utils.MarshalResponse(&models.MsgToRequestModel{
 		Message: *m,
@@ -241,8 +243,11 @@ func (c *Client) svrMsg(p []byte) {
 	if _, err := dbMessageAdd(&msgObj.Message, msgObj.From); err != nil {
 		panic(err)
 	}
-	// reload our message container
-	go loadMessages(msgObj.From, inboxMessageContainer)
+	// Make sure we are viewing the messages for the incoming message
+	if inboxSelectedUsername == msgObj.From {
+		// reload our message container
+		go loadMessages(msgObj.From, inboxMessageContainer)
+	}
 }
 
 func (c *Client) svrMsgTo(p []byte) {
@@ -256,6 +261,11 @@ func (c *Client) svrMsgTo(p []byte) {
 		if err := dbMessageSuccess(msgObj.MsgID, msgObj.To); err != nil {
 			panic(err)
 		}
+	} else {
+		if err := dbMessageFail(msgObj.MsgID, msgObj.To); err != nil {
+			panic(err)
+		}
+		inboxFailedMessageCount++
 	}
 	// redraw our messages
 	go loadMessages(msgObj.To, inboxMessageContainer)
@@ -284,4 +294,6 @@ func (c *Client) svrUser(p []byte) {
 	app.Draw() // force draw to speed up the changes
 }
 
-func (c *Client) Close() {}
+func (c *Client) Close() {
+	c.Close()
+}
