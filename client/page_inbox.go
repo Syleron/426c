@@ -187,10 +187,6 @@ func loadMessages(username string, container *tview.TextView) {
 	for _, message := range messages {
 		var fmsg string
 		var color string
-		if !message.Success {
-			// Add our message to our message queue to send/process
-			client.MQ.Add(&message)
-		}
 		color = "[gray]"
 		// Set our message stats
 		if !message.Success {
@@ -219,8 +215,6 @@ func loadMessages(username string, container *tview.TextView) {
 	// Set our new message
 	container.SetText(result)
 	container.ScrollToEnd()
-	// Process our message queue
-	go client.MQ.Process()
 }
 
 func inboxQuitModal() {

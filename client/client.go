@@ -231,7 +231,6 @@ func (c *Client) svrLogin(p []byte) {
 }
 
 func (c *Client) svrMsg(p []byte) {
-	panic("balls")
 	var msgObj models.MsgResponseModel
 	if err := json.Unmarshal(p, &msgObj); err != nil {
 		log.Debug("unable to unmarshal packet")
@@ -258,9 +257,9 @@ func (c *Client) svrMsgTo(p []byte) {
 		if err := dbMessageSuccess(msgObj.MsgID, msgObj.To); err != nil {
 			panic(err)
 		}
-		// redraw our messages
-		go loadMessages(msgObj.To, inboxMessageContainer)
 	}
+	// redraw our messages
+	go loadMessages(msgObj.To, inboxMessageContainer)
 }
 
 // svrUser - User Object response from network and update our local DB
