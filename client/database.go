@@ -36,10 +36,10 @@ func dbMessageAdd(m *models.Message) (int, error) {
 	})
 }
 
-func dbMessageGetByID(id int, toUsername string) (models.Message, error) {
+func dbMessageGetByID(id int, username string) (models.Message, error) {
 	var message models.Message
 	err := db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(toUsername))
+		b := tx.Bucket([]byte(username))
 		v := b.Get(itob(id))
 		if err := json.Unmarshal(v, &message); err != nil {
 			return err
@@ -47,6 +47,22 @@ func dbMessageGetByID(id int, toUsername string) (models.Message, error) {
 		return nil
 	})
 	return message, err
+}
+
+func dbMessageSuccess(id int, username string) error {
+	err := db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(username))
+		message, err := dbMessageGetByID(id, username)
+		// Update our message
+		message.Success = true
+		// Marshal user data into bytes.
+		buf, err := json.Marshal(message)
+		if err != nil {
+			return err
+		}
+		return b.Put(itob(message.ID), buf)
+	})
+	return err
 }
 
 func dbMessagesGet(toUsername string, fromUsername string) ([]models.Message, error) {

@@ -240,6 +240,9 @@ func (c *Client) svrMsg(p []byte) {
 	if _, err := dbMessageAdd(&msgObj.Message); err != nil {
 		panic(err)
 	}
+	panic("balls")
+	// reload our message container
+	go loadMessages(msgObj.From, inboxMessageContainer)
 }
 
 func (c *Client) svrMsgTo(p []byte) {
@@ -248,12 +251,14 @@ func (c *Client) svrMsgTo(p []byte) {
 		log.Debug("unable to unmarshal packet")
 		return
 	}
-	// Make sure our response object was successful
-	if !msgObj.Success {
-		// TODO: Requeue the message to be resent
-		return
+	// Mark our request successful
+	if msgObj.Success {
+		if err := dbMessageSuccess(msgObj.MsgID, msgObj.To); err != nil {
+			panic(err)
+		}
+		// redraw our messages
+		go loadMessages(msgObj.To, inboxMessageContainer)
 	}
-	// TODO: Mark the message successful
 }
 
 // svrUser - User Object response from network and update our local DB

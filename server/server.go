@@ -30,6 +30,7 @@ import (
 // TODO - Session timeout
 // TODO - Make sure you cannot send a message to yourself
 // TODO - Prevent multiple logins, logout the previous session
+// TODO - Rate limit connection
 
 // Username -> keys
 // Store keys with server
@@ -120,13 +121,16 @@ func (s *Server) commandRouter(c *Client, p []byte) {
 		s.cmdRegister(c, p[1:])
 	case plib.CMD_USER:
 		log.Debug("message user command")
+		s.authCheck(c)
 		s.cmdUser(c, p[1:])
 	case plib.CMD_MSGTO:
 		log.Debug("message msg to command")
+		s.authCheck(c)
 		s.cmdMsgTo(c, p[1:])
 	default:
 		// TODO: This shouldn't ever happen. Perhaps handle block or handle this.
 		log.Debug("received unknown command")
+		c.Conn.Close()
 	}
 }
 
@@ -248,14 +252,15 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 	}
 	// Set our connection details
 	c.Username = loginObj.Username
-	// Add client to our online list
+	// If our user already is connected, disconnect them.
 	if user, ok := s.clients[c.Username]; ok {
+		// TODO: Should be a dedicated packet logging out the user.
 		user.Conn.Close()
 	}
+	// Add client to our online list
 	if err := s.clientAdd(c.Username, c); err != nil {
 		log.Error(err)
 	}
-	// TODO: Check to see if we are already logged in, disconnect any other session.
 	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 		Username: loginObj.Username,
 		Success: true,
@@ -302,4 +307,12 @@ func (s *Server) shutdown() {
 		panic(err)
 	}
 	os.Exit(0)
+}
+
+func (s *Server) authCheck(c *Client) {
+	// Make sure we have a session set otherwise we kill their connection
+	if c.Username == "" {
+		log.Warn("Unauthorised. Connection closed. " + c.Conn.RemoteAddr().String())
+		c.Conn.Close()
+	}
 }

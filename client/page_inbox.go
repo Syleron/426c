@@ -1,18 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/models"
 	"github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
+	"sync"
 )
 
 var (
+	inboxMessageContainer *tview.TextView
 	userListContainer *tview.Table
 	inboxToField *tview.InputField
+	inboxMessageContainerLock sync.Mutex
 )
 
 func InboxPage() (id string, content tview.Primitive) {
@@ -33,7 +35,7 @@ func InboxPage() (id string, content tview.Primitive) {
 	userGrid.SetBorderPadding(0, 1, 0, 0)
 	chatGrid.SetBorderPadding(0, 1, 0, 0)
 
-	messageContainer := tview.NewTextView().
+	inboxMessageContainer = tview.NewTextView().
 		SetDynamicColors(true).
 		SetRegions(true).
 		SetWordWrap(true).
@@ -41,7 +43,7 @@ func InboxPage() (id string, content tview.Primitive) {
 			app.Draw()
 		})
 
-	messageContainer.SetScrollable(true)
+	inboxMessageContainer.SetScrollable(true)
 
 	userListContainer = tview.NewTable()
 	userListContainer.SetBorder(false)
@@ -56,7 +58,7 @@ func InboxPage() (id string, content tview.Primitive) {
 			// Set our selected username
 			selectedUsername = username.Text
 			// Load our messages for the user
-			loadMessages(selectedUsername, messageContainer)
+			go loadMessages(selectedUsername, inboxMessageContainer)
 			// Set focus on our message container
 			app.SetFocus(inputField)
 		},
@@ -74,11 +76,11 @@ func InboxPage() (id string, content tview.Primitive) {
 					userListContainer.GetCell(i, 0).SetTextColor(tcell.ColorWhite)
 				}
 			case tcell.KeyUp:
-				r, c := messageContainer.GetScrollOffset()
-				messageContainer.ScrollTo(r - 1, c)
+				r, c := inboxMessageContainer.GetScrollOffset()
+				inboxMessageContainer.ScrollTo(r - 1, c)
 			case tcell.KeyDown:
-				r, c := messageContainer.GetScrollOffset()
-				messageContainer.ScrollTo(r + 1, c)
+				r, c := inboxMessageContainer.GetScrollOffset()
+				inboxMessageContainer.ScrollTo(r + 1, c)
 			case tcell.KeyEnter:
 				if inputField.GetText() == "" {
 					return
@@ -87,8 +89,6 @@ func InboxPage() (id string, content tview.Primitive) {
 				submitMessage(selectedUsername, inputField.GetText())
 				// clear out our input
 				inputField.SetText("")
-				// reload our messages
-				loadMessages(selectedUsername, messageContainer)
 			}
 		})
 
@@ -146,7 +146,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		AddItem(userListContainer, 0, 1, true), 0, 2, true)
 
 	chatGrid.AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(messageContainer, 0, 1, false).
+		AddItem(inboxMessageContainer, 0, 1, false).
 		AddItem(inputField, 1, 1, false), 0, 2, false)
 
 	// Get our contacts
@@ -164,19 +164,23 @@ func drawContactsList() {
 		app.Stop()
 	}
 	// List all of our contacts in our local DB
-	for i, user := range users {
+	count := 0 // custom counter as skipping our user screws with the for one
+	for _, user := range users {
 		if user.Username != lUser {
-			userListContainer.SetCell(i, 0, tview.NewTableCell(user.Username))
+			userListContainer.SetCell(count, 0, tview.NewTableCell(user.Username))
+			count++
 		}
 	}
 }
 
+// TODO: Queue unsuccessful messages
 func loadMessages(username string, container *tview.TextView) {
-	// clear our messages
-	container.Clear()
+	inboxMessageContainerLock.Lock()
+	defer inboxMessageContainerLock.Unlock()
 	// Get our messages
 	messages, _ := dbMessagesGet(username, lUser)
 	reverseAny(messages)
+	var result string
 	for _, message := range messages {
 		var fmsg string
 		var color string
@@ -201,9 +205,12 @@ func loadMessages(username string, container *tview.TextView) {
 		} else {
 			fmsg += decryptMessage(message.FromMessage)
 		}
-
-		fmt.Fprintf(container,`%s %v`, fmsg, tablewriter.NEWLINE)
+		result += fmsg + tablewriter.NEWLINE
 	}
+	// Clear our messages
+	container.Clear()
+	// Set our new message
+	container.SetText(result)
 	container.ScrollToEnd()
 }
 
