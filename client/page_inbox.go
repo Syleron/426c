@@ -22,6 +22,11 @@ var (
 	inboxFailedMessageCount int
 )
 
+// TODO: When searching and finding a user, the userlist does not reload
+// TODO: Upon receiving a message from a user that you dont already have, nothing shows.
+// TODO: Take into account multiple accounts sending messages to the same user
+
+
 func InboxPage() (id string, content tview.Primitive) {
 	var inputField *tview.InputField
 
@@ -186,6 +191,23 @@ func loadMessages(username string, container *tview.TextView) {
 	for _, message := range messages {
 		var fmsg string
 		var color string
+		var clearText string
+		// Attempt to decrypt message
+		// Note: This is not very efficient, the message may not be one of our own and hence
+		// will fail increasing load time
+		if message.To == lUser {
+			s, err := decryptMessage(message.ToMessage)
+			if err != nil {
+				return
+			}
+			clearText = s
+		} else {
+			s, err := decryptMessage(message.FromMessage)
+			if err != nil {
+				return
+			}
+			clearText = s
+		}
 		color = "[gray]"
 		// Set our message stats
 		if !message.Success {
@@ -202,11 +224,8 @@ func loadMessages(username string, container *tview.TextView) {
 			fmsg += " <[darkcyan]" + message.From + color + "> [lightgray]"
 		}
 		// Set our message
-		if message.To == lUser {
-			fmsg += decryptMessage(message.ToMessage)
-		} else {
-			fmsg += decryptMessage(message.FromMessage)
-		}
+		fmsg += clearText
+		// Finalize our string
 		result += fmsg + tablewriter.NEWLINE
 	}
 	// Clear our messages

@@ -95,7 +95,6 @@ func (s *Server) newClient(conn net.Conn) {
 	for {
 		packet, err = plib.PacketRead(br)
 		if err != nil {
-			log.Error(err)
 			break
 		}
 		s.commandRouter(client, packet)

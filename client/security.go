@@ -60,11 +60,11 @@ func decryptRSA(message string, addData []byte, key []byte) (string, error) {
 	return string(plaintext), nil
 }
 
-func decryptMessage(message string) string {
+func decryptMessage(message string) (string, error) {
 	var pgp = gopenpgp.GetGopenPGP()
 	clearText, err := pgp.DecryptMessageStringKey(message, privKey, pHash)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return clearText
+	return clearText, nil
 }

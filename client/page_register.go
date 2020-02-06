@@ -33,7 +33,7 @@ func RegisterPage() (id string, content tview.Primitive) {
 		AddButton("Back", func() {
 			pages.SwitchToPage("login")
 		})
-	form.SetBorder(true).SetTitle("426c Register")
+	form.SetBorder(true).SetTitle(" 426c Register ")
 
 	return "register", Center(40, 11, form)
 }
