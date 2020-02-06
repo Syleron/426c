@@ -25,6 +25,8 @@ var (
 	privKey string
 	// Total blocks available
 	blocks int
+	// Cost per message
+	msgCost int
 )
 
 func header() *tview.TextView {
@@ -48,11 +50,11 @@ func footer() *tview.TextView {
 	foot.SetBackgroundColor(tcell.NewRGBColor(48, 48, 48))
 
 	// Do it first
-	fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" ")
+	fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" / " + strconv.Itoa(msgCost))
 	// Then update every 2 seconds
 	go doEvery(2*time.Second, func() error {
 		foot.Clear()
-		fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" ")
+		fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" / " + strconv.Itoa(msgCost))
 		app.Draw()
 		return nil
 	})

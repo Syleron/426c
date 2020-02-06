@@ -191,6 +191,7 @@ func (c *Client) svrBlock(p []byte) {
 	}
 	// Set our available blocks
 	blocks = blockObj.Blocks
+	msgCost = blockObj.MsgCost
 }
 
 func (c *Client) svrRegister(p []byte) {
