@@ -79,6 +79,8 @@ func (c *Client) commandRouter(p []byte) {
 		c.svrMsgTo(p[1:])
 	case plib.SVR_MSG:
 		c.svrMsg(p[1:])
+	case plib.SVR_BLOCK:
+		c.svrBlock(p[1:])
 	default:
 		panic("balls")
 	}
@@ -182,8 +184,16 @@ func (c *Client) cmdMsgTo(m *models.Message) {
 // ||
 // Server Responses
 // ||
+func (c *Client) svrBlock(p []byte) {
+	var blockObj models.BlockResponseModel
+	if err := json.Unmarshal(p, &blockObj); err != nil {
+		app.Stop()
+	}
+	// Set our available blocks
+	blocks = blockObj.Blocks
+}
 
-func (c *Client) svrRegister(p []byte) error {
+func (c *Client) svrRegister(p []byte) {
 	var regObj models.RegisterResponseModel
 	if err := json.Unmarshal(p, &regObj); err != nil {
 		app.Stop()
@@ -196,9 +206,8 @@ func (c *Client) svrRegister(p []byte) error {
 				pages.SwitchToPage("login")
 			},
 		})
-		return nil
+		return
 	}
-	return nil
 }
 
 func (c *Client) svrLogin(p []byte) {
@@ -218,8 +227,9 @@ func (c *Client) svrLogin(p []byte) {
 		})
 		return
 	}
-	// Set our logged in user
-	c.Username = loginObj.Username
+	// Set variables
+	c.Username = loginObj.Username // set our username
+	blocks = loginObj.Blocks // set our available blocks to spend
 	// Load our private key
 	b, err := utils.LoadFile(c.Username)
 	if err != nil {

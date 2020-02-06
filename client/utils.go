@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"github.com/rivo/tview"
 	"math/rand"
 	"reflect"
@@ -82,11 +81,4 @@ func startSpinner(button *tview.Button, action func()) {
 			}
 		}
 	}()
-}
-
-// itob returns an 8-byte big endian representation of v.
-func itob(v int) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(v))
-	return b
 }

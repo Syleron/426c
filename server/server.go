@@ -87,7 +87,7 @@ func (s *Server) newClient(conn net.Conn) {
 	br := bufio.NewReader(client.Conn)
 	packet, err := plib.PacketRead(br)
 	if err != nil {
-		log.Error(err)
+		conn.Close()
 	}
 	//// Handle initial request
 	s.commandRouter(client, packet)
@@ -279,6 +279,7 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		Username: loginObj.Username,
 		Success: true,
 		Message: "success",
+		Blocks: user.Blocks,
 	}))
 }
 

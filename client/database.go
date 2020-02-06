@@ -40,7 +40,7 @@ func dbMessageGetByID(id int, username string) (models.Message, error) {
 	var message models.Message
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(username))
-		v := b.Get(itob(id))
+		v := b.Get(utils.Itob(id))
 		if err := json.Unmarshal(v, &message); err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func dbMessageSuccess(id int, username string) error {
 		if err != nil {
 			return err
 		}
-		return b.Put(itob(message.ID), buf)
+		return b.Put(utils.Itob(message.ID), buf)
 	})
 	return err
 }
@@ -76,7 +76,7 @@ func dbMessageFail(id int, username string) error {
 		if err != nil {
 			return err
 		}
-		return b.Put(itob(message.ID), buf)
+		return b.Put(utils.Itob(message.ID), buf)
 	})
 	return err
 }

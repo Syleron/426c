@@ -32,14 +32,17 @@ func blockCalcCost(n int) int {
 }
 
 func blockDistribute(clients map[string]*Client) {
-	for _ = range time.Tick(10 * time.Minute) {
+	for _ = range time.Tick(1 * time.Minute) {
 		log.Debug("Issuing blocks..")
-		for _, user := range clients {
+		for _, c := range clients {
 			// Increase user blocks by pre-configured amount
-
+			blocks, err := dbUserBlockCredit(c.Username, 5)
+			if err != nil {
+				log.Error(err)
+			}
 			// Let the user know of their new block balance
-			user.Send(packet.SVR_BLOCK, utils.MarshalResponse(&models.UserResponseModel{
-				Success: false,
+			c.Send(packet.SVR_BLOCK, utils.MarshalResponse(&models.BlockResponseModel{
+				Blocks: blocks,
 			}))
 		}
 	}

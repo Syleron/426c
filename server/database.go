@@ -4,14 +4,58 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/boltdb/bolt"
+	"github.com/labstack/gommon/log"
 	"github.com/syleron/426c/common/models"
 	"github.com/syleron/426c/common/utils"
 	"time"
 )
 
-func dbUserBlockDebit() {}
+func dbUserBlockCredit(username string, total int) (int, error) {
+	user, err := dbUserGet(username)
+	if err != nil {
+		return 0, err
+	}
+	blocks := user.Blocks
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		// Update our message
+		blocks += total
+		// Marshal user data into bytes.
+		buf, err := json.Marshal(user)
+		if err != nil {
+			return err
+		}
+		return b.Put(utils.Itob(user.ID), buf)
+	})
+	if err != nil {
+		log.Error(err)
+	}
+	return blocks, err
+}
 
-func dbUserCreditDebit() {}
+func dbUserBlockDebit(username string, total int) (int, error) {
+	user, err := dbUserGet(username)
+	if err != nil {
+		return 0, err
+	}
+	blocks := user.Blocks
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		// Update our message
+		if (blocks - total) <= 0 {
+			blocks = 0
+		} else {
+			blocks -= total
+		}
+		// Marshal user data into bytes.
+		buf, err := json.Marshal(user)
+		if err != nil {
+			return err
+		}
+		return b.Put(utils.Itob(user.ID), buf)
+	})
+	return blocks, err
+}
 
 func dbUserAdd(u *models.User) error {
 	t := time.Now()
