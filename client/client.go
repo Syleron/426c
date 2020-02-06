@@ -64,6 +64,9 @@ func (c *Client) connectionHandler() {
 }
 
 func (c *Client) commandRouter(p []byte) {
+	if len(p) <= 0 {
+		return
+	}
 	switch p[0] {
 	case plib.SVR_LOGIN:
 		c.svrLogin(p[1:])
