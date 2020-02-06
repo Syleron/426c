@@ -18,14 +18,13 @@ var (
 	client *Client
 	db     *database.Database
 
-	// TODO: Move user details somewhere else
-	// Logged in username
-	lUser string
 	// User password hash used to decrypt w/ private key.
 	// TODO: Not sure if this should be done or not. Seems iffy.
 	pHash string
 	// Logged in user private key
 	privKey string
+	// Total blocks available
+	blocks int
 )
 
 func header() *tview.TextView {
@@ -33,8 +32,6 @@ func header() *tview.TextView {
 		SetDynamicColors(true).
 		SetRegions(true).
 		SetWrap(false)
-
-	//head.SetBackgroundColor(tcell.ColorGray)
 
 	fmt.Fprintf(head, `░ [yellow]426c [gray]Network `)
 
@@ -51,11 +48,11 @@ func footer() *tview.TextView {
 	foot.SetBackgroundColor(tcell.NewRGBColor(48, 48, 48))
 
 	// Do it first
-	fmt.Fprintf(foot, " [_] "+strconv.Itoa(getBlocks())+" ")
+	fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" ")
 	// Then update every 2 seconds
 	go doEvery(2*time.Second, func() error {
 		foot.Clear()
-		fmt.Fprintf(foot, " [_] "+strconv.Itoa(getBlocks())+" ")
+		fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" ")
 		app.Draw()
 		return nil
 	})

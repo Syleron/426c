@@ -1,16 +1,12 @@
 package main
 
 import (
-	gopenpgp "github.com/ProtonMail/gopenpgp/crypto"
 	"github.com/gdamore/tcell"
-	"github.com/olekukonko/tablewriter"
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/models"
 	"github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
-	"strings"
 	"sync"
-	"time"
 )
 
 var (
@@ -22,7 +18,6 @@ var (
 	inboxFailedMessageCount int
 )
 
-// TODO: When searching and finding a user, the userlist does not reload
 // TODO: Upon receiving a message from a user that you dont already have, nothing shows.
 // TODO: Take into account multiple accounts sending messages to the same user
 
@@ -81,33 +76,19 @@ func InboxPage() (id string, content tview.Primitive) {
 					return
 				}
 				// submit our message
-				submitMessage(inboxSelectedUsername, inputField.GetText())
+				messageSubmit(inboxSelectedUsername, inputField.GetText())
 				// clear out our input
 				inputField.SetText("")
 			}
 		})
 
-	composeButton := tview.NewButton("Compose").SetSelectedFunc(func() {
-		creditBlocks(12)
-		pages.SwitchToPage("compose")
-	})
-	composeButton.SetBorder(true).SetRect(0, 0, 0, 1)
-
 	inboxToField = tview.NewInputField().
 		SetPlaceholder("Search user")
 
-	composeButton.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	userListContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyESC:
 			inboxQuitModal()
-		case tcell.KeyTAB:
-			app.SetFocus(userListContainer)
-		}
-		return event
-	})
-
-	userListContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
 		case tcell.KeyTAB:
 			app.SetFocus(inboxToField)
 		case tcell.KeyEnter:
@@ -118,7 +99,7 @@ func InboxPage() (id string, content tview.Primitive) {
 			// Set our selected username
 			inboxSelectedUsername = username.Text
 			// Load our messages for the user
-			go loadMessages(inboxSelectedUsername, inboxMessageContainer)
+			go messageLoad(inboxSelectedUsername, inboxMessageContainer)
 			go inboxRetryFailedMessages(inboxSelectedUsername)
 			// Set focus on our message container
 			app.SetFocus(inputField)
@@ -173,7 +154,7 @@ func drawContactsList() {
 	// List all of our contacts in our local DB
 	count := 0 // custom counter as skipping our user screws with the for one
 	for _, user := range users {
-		if user.Username != lUser {
+		if user.Username != client.Username {
 			userListContainer.SetCell(count, 0, tview.NewTableCell(user.Username))
 			count++
 		}
@@ -181,65 +162,12 @@ func drawContactsList() {
 	app.Draw()
 }
 
-func loadMessages(username string, container *tview.TextView) {
-	inboxMessageContainerLock.Lock()
-	defer inboxMessageContainerLock.Unlock()
-	// Get our messages
-	messages, _ := dbMessagesGet(username, lUser)
-	reverseAny(messages)
-	var result string
-	for _, message := range messages {
-		var fmsg string
-		var color string
-		var clearText string
-		// Attempt to decrypt message
-		// Note: This is not very efficient, the message may not be one of our own and hence
-		// will fail increasing load time
-		if message.To == lUser {
-			s, err := decryptMessage(message.ToMessage)
-			if err != nil {
-				return
-			}
-			clearText = s
-		} else {
-			s, err := decryptMessage(message.FromMessage)
-			if err != nil {
-				return
-			}
-			clearText = s
-		}
-		color = "[gray]"
-		// Set our message stats
-		if !message.Success {
-			fmsg += "[red]! " + color
-		} else {
-			fmsg += color
-		}
-		// Set our time
-		fmsg += message.Date.Format("15:04:05")
-		// Set from/to
-		if message.To == lUser {
-			fmsg += " <[darkmagenta]" + message.From + color +  "> [lightgray]"
-		} else {
-			fmsg += " <[darkcyan]" + message.From + color + "> [lightgray]"
-		}
-		// Set our message
-		fmsg += clearText
-		// Finalize our string
-		result += fmsg + tablewriter.NEWLINE
-	}
-	// Clear our messages
-	container.Clear()
-	// Set our new message
-	container.SetText(result)
-	container.ScrollToEnd()
-}
 
 func inboxRetryFailedMessages(username string) {
 	// reset counter
 	inboxFailedMessageCount = 0
 	// Get our messages
-	messages, _ := dbMessagesGet(username, lUser)
+	messages, _ := dbMessagesGet(username, client.Username)
 	reverseAny(messages)
 	for _, message := range messages {
 		if !message.Success {
@@ -257,71 +185,4 @@ func inboxQuitModal() {
 			app.Stop()
 		},
 	})
-}
-
-func submitMessage(toUser string, message string) {
-	var pgp = gopenpgp.GetGopenPGP()
-
-	// Make sure we have this user in our local DB to encrypt
-	usrObj, err := dbUserGet(toUser)
-	if err != nil {
-		showError(ClientError{
-			Message:  "Unable to submit message to user as it does not exist",
-			Button:   "Continue",
-		})
-		return
-	}
-
-	// Encrypt message using our recipients public key
-	toKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(usrObj.PubKey))
-	if err != nil {
-		panic(err)
-	}
-	encToMsg, err := pgp.EncryptMessage(
-		message,
-		toKeyRing,
-		nil,
-		"",
-		false,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	// Encrypt our message using our details
-	fromKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(privKey))
-	if err != nil {
-		panic(err)
-	}
-	encFromMsg, err := pgp.EncryptMessage(
-		message,
-		fromKeyRing,
-		nil,
-		"",
-		false,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	// Define our message object
-	msgObj := &models.Message{
-		FromMessage: encFromMsg,
-		ToMessage: encToMsg,
-		To:      toUser,
-		From: lUser,
-		Date:    time.Now(),
-		Success: true,
-	}
-
-	// Add our message to our local DB
-	id, err := dbMessageAdd(msgObj, msgObj.To)
-	if err != nil {
-		panic(err)
-	}
-
-	// Update our object with our db ID
-	msgObj.ID = id
-
-	client.cmdMsgTo(msgObj)
 }

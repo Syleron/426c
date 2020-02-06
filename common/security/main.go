@@ -1,11 +1,18 @@
 package security
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha512"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/pem"
+	"errors"
+	"io"
 	"log"
 	"math/big"
 	"net"
@@ -64,4 +71,52 @@ func GenerateKeys(host string) error {
 	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 	keyOut.Close()
 	return nil
+}
+
+func SHA512HashEncode(s string) string {
+	hasher := sha512.New()
+	hasher.Write([]byte(s))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func EncryptRSA(message []byte, addData []byte, key []byte) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	nonce := make([]byte, aesgcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		panic(err.Error())
+	}
+	ciphertext := aesgcm.Seal(nonce, nonce, message, addData)
+	return base64.URLEncoding.EncodeToString(ciphertext), nil
+}
+
+func DecryptRSA(message string, addData []byte, key []byte) (string, error) {
+	ciphertext, err := base64.URLEncoding.DecodeString(message)
+	if err != nil {
+		return "", err
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	nonceSize := aesgcm.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return "", errors.New("invalid nonce size")
+	}
+	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, addData)
+	if err != nil {
+		return "", err
+	}
+	return string(plaintext), nil
 }

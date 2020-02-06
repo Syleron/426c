@@ -32,9 +32,6 @@ import (
 //
 
 
-// Total Chat's per second (TCS) / total number of users
-// For example 1 / 10 = 0.10 *
-
 type Server struct {
 	listener net.Listener
 	clients map[string]*Client
@@ -55,10 +52,13 @@ func setupServer(laddr string) *Server {
 		panic(err)
 	}
 	log.Infof("listening on port %v\n", port)
-	return &Server{
+	s := &Server{
 		listener: listener,
 		clients: make(map[string]*Client),
 	}
+	// Setup block distributor
+	go blockDistribute(s.clients)
+	return s
 }
 
 func (s *Server) connectionHandler() {
@@ -144,7 +144,7 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		return
 	}
 	// Make sure our user exists
-	_, err := userGet(msgObj.To)
+	_, err := dbUserGet(msgObj.To)
 	if err != nil {
 		c.Send(plib.SVR_USER, utils.MarshalResponse(&models.UserResponseModel{
 			Success: false,
@@ -190,7 +190,7 @@ func (s *Server) cmdUser(c *Client, p []byte) {
 		return
 	}
 	// Get our user from our users bucket
-	user, err := userGet(userObj.Username)
+	user, err := dbUserGet(userObj.Username)
 	if err != nil {
 		log.Error(err)
 		c.Send(plib.SVR_USER, utils.MarshalResponse(&models.UserResponseModel{
@@ -225,7 +225,7 @@ func (s *Server) cmdRegister(c *Client, p []byte) {
 		Access:         0,
 	}
 	// Register our user
-	if err := userAdd(user); err != nil {
+	if err := dbUserAdd(user); err != nil {
 		log.Debug(err)
 	}
 }
@@ -246,7 +246,7 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		return
 	}
 	// Get our user account
-	user, err := userGet(loginObj.Username)
+	user, err := dbUserGet(loginObj.Username)
 	if err != nil {
 		log.Debug("unable to find user account")
 		c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{

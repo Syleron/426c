@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/syleron/426c/common/models"
 	plib "github.com/syleron/426c/common/packet"
+	"github.com/syleron/426c/common/security"
 	"github.com/syleron/426c/common/utils"
 	"net"
 	"strings"
@@ -19,6 +20,8 @@ type Client struct {
 	Reader *bufio.Reader
 	Writer *bufio.Writer
 	Conn   net.Conn
+	Username string
+	Blocks int
 }
 
 func setupClient(address string) (*Client, error) {
@@ -88,7 +91,7 @@ func (c *Client) commandRouter(p []byte) {
 func (c *Client) cmdRegister(username string, password string) {
 	var pgp = gopenpgp.GetGopenPGP()
 	// Generate password hash
-	hashString := hashPassword(password)
+	hashString := security.SHA512HashEncode(password)
 	// Calculate hash key
 	hashKey := hashString[:32]
 	// Calculate hash remainder
@@ -117,7 +120,7 @@ func (c *Client) cmdRegister(username string, password string) {
 		app.Stop()
 	}
 	// Encrypt our private RSA key
-	encryptedKey, err := encryptRSA([]byte(rsaKey), []byte(hashRemainder), []byte(hashKey))
+	encryptedKey, err := security.EncryptRSA([]byte(rsaKey), []byte(hashRemainder), []byte(hashKey))
 	if err != nil {
 		app.Stop()
 	}
@@ -140,7 +143,7 @@ func (c *Client) cmdRegister(username string, password string) {
 
 func (c *Client) cmdLogin(username string, password string) {
 	// Generate password hash
-	hashString := hashPassword(password)
+	hashString := security.SHA512HashEncode(password)
 	// Calculate hash remainder
 	hashRemainder := hashString[32:48]
 	// Create our object to send
@@ -216,9 +219,9 @@ func (c *Client) svrLogin(p []byte) {
 		return
 	}
 	// Set our logged in user
-	lUser = loginObj.Username
+	c.Username = loginObj.Username
 	// Load our private key
-	b, err := utils.LoadFile(lUser)
+	b, err := utils.LoadFile(c.Username)
 	if err != nil {
 		showError(ClientError{
 			Message: "Login failed. Unable to load private key for " + loginObj.Username + ".",
@@ -249,7 +252,7 @@ func (c *Client) svrMsg(p []byte) {
 	// Make sure we are viewing the messages for the incoming message
 	if inboxSelectedUsername == msgObj.From {
 		// reload our message container
-		go loadMessages(msgObj.From, inboxMessageContainer)
+		go messageLoad(msgObj.From, inboxMessageContainer)
 	}
 }
 
@@ -271,7 +274,7 @@ func (c *Client) svrMsgTo(p []byte) {
 		inboxFailedMessageCount++
 	}
 	// redraw our messages
-	go loadMessages(msgObj.To, inboxMessageContainer)
+	go messageLoad(msgObj.To, inboxMessageContainer)
 }
 
 // svrUser - User Object response from network and update our local DB
@@ -294,5 +297,5 @@ func (c *Client) svrUser(p []byte) {
 	// Reset UI
 	inboxToField.SetText("")
 	app.SetFocus(userListContainer)
-	app.Draw() // force draw to speed up the changes
+	go drawContactsList()
 }

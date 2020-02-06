@@ -14,5 +14,6 @@ func SplashPage() (id string, content tview.Primitive) {
 				app.Stop()
 			}
 		})
+
 	return "splash", modal
 }
