@@ -15,11 +15,9 @@ func dbUserBlockCredit(username string, total int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	blocks := user.Blocks
+	user.Blocks += total
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("users"))
-		// Update our message
-		blocks += total
 		// Marshal user data into bytes.
 		buf, err := json.Marshal(user)
 		if err != nil {
@@ -30,7 +28,7 @@ func dbUserBlockCredit(username string, total int) (int, error) {
 	if err != nil {
 		log.Error(err)
 	}
-	return blocks, err
+	return user.Blocks, err
 }
 
 func dbUserBlockDebit(username string, total int) (int, error) {
@@ -38,15 +36,13 @@ func dbUserBlockDebit(username string, total int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	blocks := user.Blocks
+	if (user.Blocks - total) <= 0 {
+		user.Blocks = 0
+	} else {
+		user.Blocks -= total
+	}
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("users"))
-		// Update our message
-		if (blocks - total) <= 0 {
-			blocks = 0
-		} else {
-			blocks -= total
-		}
 		// Marshal user data into bytes.
 		buf, err := json.Marshal(user)
 		if err != nil {
@@ -54,7 +50,7 @@ func dbUserBlockDebit(username string, total int) (int, error) {
 		}
 		return b.Put(utils.Itob(user.ID), buf)
 	})
-	return blocks, err
+	return user.Blocks, err
 }
 
 func dbUserAdd(u *models.User) error {
