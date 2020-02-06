@@ -29,7 +29,7 @@ func main() {
 	// Make sure we have our users bucket
 	db.CreateBucket("users")
 	// Generate new RSA keys
-	if err := security.GenerateKeys("127.0.0.1"); err != nil {
+	if err := security.GenerateKeys("proteus.426c.net"); err != nil {
 		panic(err)
 	}
 	// Create new instance of server

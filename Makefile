@@ -9,7 +9,8 @@ default: build
 build:
 	 if [ ! -d "./bin/" ]; then mkdir -p ./bin/server && mkdir -p ./bin/client; fi
 	 env GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -v -o ./bin/server/426c-server ./server/
-	 env GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -v -o ./bin/client/426c ./client/
+	 env GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -v -o ./bin/client-linux64/426c ./client/
+	 env GOOS=windows GOARCH=amd64 go build ${LDFLAGS} -v -o ./bin/client-win64/426c.exe ./client/
 get:
 	 go get -d ./client/
 	 go get -d ./server/

@@ -21,7 +21,7 @@ type Client struct {
 	Conn   net.Conn
 }
 
-func setupClient() (*Client, error) {
+func setupClient(address string) (*Client, error) {
 	// Setup our listener
 	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
@@ -34,7 +34,7 @@ func setupClient() (*Client, error) {
 	config.Rand = rand.Reader
 	// connect to this socket
 	// TODO This should be a client command rather done automagically.
-	conn, err := tls.Dial("tcp", "127.0.0.1:9000", &config)
+	conn, err := tls.Dial("tcp", address, &config)
 	if err != nil {
 		return &Client{}, errors.New("unable to connect to host")
 	}
@@ -292,8 +292,4 @@ func (c *Client) svrUser(p []byte) {
 	inboxToField.SetText("")
 	app.SetFocus(userListContainer)
 	app.Draw() // force draw to speed up the changes
-}
-
-func (c *Client) Close() {
-	c.Close()
 }

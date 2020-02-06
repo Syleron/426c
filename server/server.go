@@ -22,12 +22,10 @@ import (
 // TODO - Distribution of "blocks"
 // TODO - Charge blocks for sending a message
 // TODO - Increase the cost of blocks depending on total number of spam (Calculate the rate of messaging for a particular room)
-// TODO - Client/Server Version Validation
-// TODO - Pending messages for offline people
 // TODO - Prevent people from sending plain text
-// TODO - Session timeout
 // TODO - Make sure you cannot send a message to yourself
 // TODO - Rate limit connection
+// TODO - Disable registration
 
 // Username -> keys
 // Store keys with server
@@ -106,7 +104,8 @@ func (s *Server) newClient(conn net.Conn) {
 
 func (s *Server) commandRouter(c *Client, p []byte) {
 	if len(p) <= 0 {
-		log.Error("invalid packet", p)
+		log.Error("invalid packet -> ", string(p))
+		c.Conn.Close()
 		return
 	}
 	switch p[0] {
@@ -125,8 +124,7 @@ func (s *Server) commandRouter(c *Client, p []byte) {
 		s.authCheck(c)
 		s.cmdMsgTo(c, p[1:])
 	default:
-		// TODO: This shouldn't ever happen. Perhaps handle block or handle this.
-		log.Debug("received unknown command")
+		log.Warn("received unknown command -> ", string(p))
 		c.Conn.Close()
 	}
 }
@@ -146,6 +144,15 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		log.Debug("msg id is zero.. msgto failed")
 		return
 	}
+	// Make sure our user exists
+	_, err := userGet(msgObj.To)
+	if err != nil {
+		c.Send(plib.SVR_USER, utils.MarshalResponse(&models.UserResponseModel{
+			Success: false,
+			Message: err.Error(),
+		}))
+		return
+	}
 	// Make sure our user is online
 	if _, ok := s.clients[msgObj.To]; !ok {
 		log.Debug("unable to send message as user is offline")
@@ -160,7 +167,7 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 	msgObj.From = c.Username
 	msgObj.Date = time.Now()
 	// Send our message to our recipient
-	_, err := s.clients[msgObj.To].Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
+	_, err = s.clients[msgObj.To].Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
 		Message: msgObj.Message,
 	}))
 	if err != nil {

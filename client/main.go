@@ -75,9 +75,9 @@ func main() {
 	db.CreateBucket("messages")
 	db.CreateBucket("users")
 	// Setup our socket client
-	client, err = setupClient()
+	client, err = setupClient("proteus.426c.net:9000")
 	// Defer our client close
-	defer client.Close()
+	defer client.Conn.Close()
 	// Create the main layout
 	layout = tview.NewFlex().
 		SetDirection(tview.FlexRow).

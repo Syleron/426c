@@ -31,6 +31,7 @@ const (
 	SVR_ERROR
 	SVR_USER
 	SVR_MSG
+	SVR_BLOCK
 )
 
 const HEADER_BYTE byte = '\xde'
