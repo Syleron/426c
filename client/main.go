@@ -49,13 +49,17 @@ func footer() *tview.TextView {
 
 	foot.SetBackgroundColor(tcell.NewRGBColor(48, 48, 48))
 
+
 	// Do it first
-	fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" / " + strconv.Itoa(msgCost))
+	fmt.Fprintf(foot, " v" + Version())
+
 	// Then update every 2 seconds
-	go doEvery(2*time.Second, func() error {
-		foot.Clear()
-		fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" / " + strconv.Itoa(msgCost))
-		app.Draw()
+	go doEvery(1*time.Second, func() error {
+		if client.Username != "" {
+			foot.Clear()
+			fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks)+" / " + strconv.Itoa(msgCost))
+			app.Draw()
+		}
 		return nil
 	})
 

@@ -6,14 +6,12 @@ import (
 	"github.com/syleron/426c/common/models"
 	"github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
-	"sync"
 )
 
 var (
 	inboxMessageContainer *tview.TextView
 	userListContainer *tview.Table
 	inboxToField *tview.InputField
-	inboxMessageContainerLock sync.Mutex
 	inboxSelectedUsername string
 	inboxFailedMessageCount int
 )
@@ -92,7 +90,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		case tcell.KeyTAB:
 			app.SetFocus(inboxToField)
 		case tcell.KeyEnter:
-			row, column := userListContainer.GetOffset()
+			row, column := userListContainer.GetSelection()
 			username := userListContainer.GetCell(row, column)
 			// Mark our selected left table cell
 			username.SetTextColor(tcell.ColorRed)

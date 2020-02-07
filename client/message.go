@@ -10,8 +10,6 @@ import (
 )
 
 func messageLoad(username string, container *tview.TextView) {
-	inboxMessageContainerLock.Lock()
-	defer inboxMessageContainerLock.Unlock()
 	// Get our messages
 	messages, _ := dbMessagesGet(username, client.Username)
 	reverseAny(messages)

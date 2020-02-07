@@ -12,6 +12,7 @@ import (
 	"github.com/syleron/426c/common/utils"
 	"net"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -216,6 +217,9 @@ func (s *Server) cmdRegister(c *Client, p []byte) {
 		log.Debug("unable to unmarshal packet")
 		return
 	}
+	// Some validation
+	registerObj.Username = strings.ToLower(registerObj.Username)
+	// Create our object to add to our DB
 	user := &models.User{
 		Username:       registerObj.Username,
 		PassHash:       registerObj.PassHash,
@@ -236,6 +240,8 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		log.Debug("unable to unmarshal packet")
 		return
 	}
+	// Some validation
+	loginObj.Username = strings.ToLower(loginObj.Username)
 	// Check version
 	if loginObj.Version != VERSION {
 		log.Debug("client version mismatch")

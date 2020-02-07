@@ -53,6 +53,9 @@ func dbMessageSuccess(id int, username string) error {
 	err := db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(username))
 		message, err := dbMessageGetByID(id, username)
+		if err != nil {
+			return err
+		}
 		// Update our message
 		message.Success = true
 		// Marshal user data into bytes.
@@ -69,6 +72,9 @@ func dbMessageFail(id int, username string) error {
 	err := db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(username))
 		message, err := dbMessageGetByID(id, username)
+		if err != nil {
+			return err
+		}
 		// Update our message
 		message.Success = false
 		// Marshal user data into bytes.

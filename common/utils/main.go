@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 )
 
-// itob returns an 8-byte big endian representation of v.
+// utils.Itob returns an 8-byte big endian representation of v.
 func Itob(v int) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(v))

@@ -92,6 +92,8 @@ func (c *Client) commandRouter(p []byte) {
 
 func (c *Client) cmdRegister(username string, password string) {
 	var pgp = gopenpgp.GetGopenPGP()
+	// Some validation
+	username = strings.ToLower(username)
 	// Generate password hash
 	hashString := security.SHA512HashEncode(password)
 	// Calculate hash key
@@ -144,6 +146,8 @@ func (c *Client) cmdRegister(username string, password string) {
 }
 
 func (c *Client) cmdLogin(username string, password string) {
+	// Some validation
+	username = strings.ToLower(username)
 	// Generate password hash
 	hashString := security.SHA512HashEncode(password)
 	// Calculate hash remainder
@@ -275,13 +279,9 @@ func (c *Client) svrMsgTo(p []byte) {
 	}
 	// Mark our request successful
 	if msgObj.Success {
-		if err := dbMessageSuccess(msgObj.MsgID, msgObj.To); err != nil {
-			panic(err)
-		}
+		dbMessageSuccess(msgObj.MsgID, msgObj.To)
 	} else {
-		if err := dbMessageFail(msgObj.MsgID, msgObj.To); err != nil {
-			panic(err)
-		}
+		dbMessageFail(msgObj.MsgID, msgObj.To)
 		inboxFailedMessageCount++
 	}
 	// redraw our messages
