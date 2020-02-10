@@ -58,7 +58,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
 			case tcell.KeyESC:
-				//userListContainer.SetSelectable(true, false)
+				userListContainer.SetSelectable(true, false)
 				app.SetFocus(userListContainer)
 				// reset selection
 				for i := 0; i < userListContainer.GetRowCount(); i++ {
