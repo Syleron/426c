@@ -7,9 +7,9 @@ type LoginRequestModel struct {
 }
 
 type LoginResponseModel struct {
-	Username string `json:"username,omitempty"`
-	Success bool   `json:"success,omitempty"`
-	Message string `json:"message,omitempty"`
-	Blocks  int    `json:"blocks,omitempty"`
-	MsgCost int    `json:"msgCost,omitempty"`
+	Success    bool   `json:"success,omitempty"`
+	Message    string `json:"message,omitempty"`
+	Blocks     int    `json:"blocks,omitempty"`
+	MsgCost    int    `json:"msgCost,omitempty"`
+	EncPrivKey string `json:"encprivkey,omitempty"`
 }

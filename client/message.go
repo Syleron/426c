@@ -5,13 +5,18 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/rivo/tview"
 	"github.com/syleron/426c/common/models"
+	"log"
 	"strings"
 	"time"
 )
 
 func messageLoad(username string, container *tview.TextView) {
+	clientUsername, err := client.Cache.Get("username")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Get our messages
-	messages, _ := dbMessagesGet(username, client.Username)
+	messages, _ := dbMessagesGet(username, clientUsername.(string))
 	reverseAny(messages)
 	var result string
 	for _, message := range messages {
@@ -22,7 +27,7 @@ func messageLoad(username string, container *tview.TextView) {
 		// Attempt to decrypt message
 		// Note: This is not very efficient, the message may not be one of our own and hence
 		// will fail increasing load time
-		if message.To == client.Username {
+		if message.To == clientUsername.(string) {
 			s, err := messageDecrypt(message.ToMessage)
 			if err != nil {
 				return
@@ -47,7 +52,7 @@ func messageLoad(username string, container *tview.TextView) {
 		// Set our time
 		fmsg += message.Date.Format("15:04:05")
 		// Set from/to
-		if message.To == client.Username {
+		if message.To == clientUsername.(string) {
 			fmsg += " <[darkmagenta]" + message.From + color +  "> [lightgray]"
 		} else {
 			fmsg += " <[darkcyan]" + message.From + color + "> [lightgray]"
@@ -67,6 +72,15 @@ func messageLoad(username string, container *tview.TextView) {
 
 func messageSubmit(toUser string, message string) {
 	var pgp = gopenpgp.GetGopenPGP()
+
+	clientUsername, err := client.Cache.Get("username")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pKey, err := client.Cache.Get("pKey")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Make sure we have this user in our local DB to encrypt
 	usrObj, err := dbUserGet(toUser)
@@ -95,7 +109,7 @@ func messageSubmit(toUser string, message string) {
 	}
 
 	// Encrypt our message using our details
-	fromKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(privKey))
+	fromKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(pKey.(string)))
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +129,7 @@ func messageSubmit(toUser string, message string) {
 		FromMessage: encFromMsg,
 		ToMessage: encToMsg,
 		To:      toUser,
-		From: client.Username,
+		From: clientUsername.(string),
 		Date:    time.Now(),
 		Success: true,
 	}
@@ -134,7 +148,17 @@ func messageSubmit(toUser string, message string) {
 
 func messageDecrypt(message string) (string, error) {
 	var pgp = gopenpgp.GetGopenPGP()
-	clearText, err := pgp.DecryptMessageStringKey(message, privKey, pHash)
+
+	passHash, err := client.Cache.Get("passHash")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pKey, err := client.Cache.Get("pKey")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	clearText, err := pgp.DecryptMessageStringKey(message, pKey.(string), passHash.(string))
 	if err != nil {
 		return "", err
 	}

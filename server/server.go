@@ -282,10 +282,10 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		log.Error(err)
 	}
 	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
-		Username: loginObj.Username,
 		Success: true,
 		Message: "success",
 		Blocks: user.Blocks,
+		EncPrivKey: user.EncPrivKey,
 	}))
 }
 

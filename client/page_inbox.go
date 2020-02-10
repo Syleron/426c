@@ -142,6 +142,10 @@ func InboxPage() (id string, content tview.Primitive) {
 }
 
 func drawContactsList() {
+	clientUsername, err := client.Cache.Get("username")
+	if err != nil {
+		return
+	}
 	// Clear our current list
 	userListContainer.Clear()
 	// Get our contacts from our db
@@ -152,7 +156,7 @@ func drawContactsList() {
 	// List all of our contacts in our local DB
 	count := 0 // custom counter as skipping our user screws with the for one
 	for _, user := range users {
-		if user.Username != client.Username {
+		if user.Username != clientUsername {
 			userListContainer.SetCell(count, 0, tview.NewTableCell(user.Username))
 			count++
 		}
@@ -162,10 +166,14 @@ func drawContactsList() {
 
 
 func inboxRetryFailedMessages(username string) {
+	clientUsername, err := client.Cache.Get("username")
+	if err != nil {
+		return
+	}
 	// reset counter
 	inboxFailedMessageCount = 0
 	// Get our messages
-	messages, _ := dbMessagesGet(username, client.Username)
+	messages, _ := dbMessagesGet(username, clientUsername.(string))
 	reverseAny(messages)
 	for _, message := range messages {
 		if !message.Success {

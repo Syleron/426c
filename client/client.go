@@ -14,14 +14,61 @@ import (
 	"github.com/syleron/426c/common/utils"
 	"net"
 	"strings"
+	"sync"
 )
 
 type Client struct {
+	// Connection reader
 	Reader *bufio.Reader
+	// Connection writer
 	Writer *bufio.Writer
+	// Connection object
 	Conn   net.Conn
-	Username string
-	Blocks int
+	// Request cache
+	Cache *Cache
+}
+
+type Cache struct {
+	// TODO: Consider Cache to only accept string values
+	store map[string]interface{}
+	sync.Mutex
+}
+
+func (c *Cache) Add(key string, value interface{}) error {
+	c.Lock()
+	defer c.Unlock()
+	if _, ok := c.store[key]; ok {
+		return errors.New("cache add failed. key already exists")
+	}
+	c.store[key] = value
+	return nil
+}
+
+func (c *Cache) Update(key string, value interface{}) error {
+	c.Lock()
+	defer c.Unlock()
+	if _, ok := c.store[key]; ok {
+		c.store[key] = value
+		return nil
+	}
+	return errors.New("cache update failed. key " + key + " doesn't exist ")
+}
+
+func (c *Cache) Remove(key string) error {
+	c.Lock()
+	defer c.Unlock()
+	if _, ok := c.store[key]; !ok {
+		return errors.New("cache remove failed. key " + key + " doesn't exist")
+	}
+	delete(c.store, key)
+	return nil
+}
+
+func (c *Cache) Get(key string) (interface{}, error) {
+	if _, ok := c.store[key]; !ok {
+		return nil, errors.New("cache get failed. key " + key + " doesn't exist")
+	}
+	return c.store[key], nil
 }
 
 func setupClient(address string) (*Client, error) {
@@ -46,7 +93,14 @@ func setupClient(address string) (*Client, error) {
 		Writer: bufio.NewWriter(conn),
 		Reader: bufio.NewReader(conn),
 		Conn:   conn,
+		Cache: &Cache{
+			store: make(map[string]interface{}),
+			Mutex: sync.Mutex{},
+		},
 	}
+	// Set our default cache options
+	c.Cache.Add("blocks", 0)
+	c.Cache.Add("msgCost", 0)
 	// Put our handlers into a go routine
 	go c.connectionHandler()
 	return c, nil
@@ -108,10 +162,6 @@ func (c *Client) cmdRegister(username string, password string) {
 		"rsa",
 		4096,
 	)
-	// save our key
-	if err := utils.WriteFile(rsaKey, username); err != nil{
-		app.Stop()
-	}
 	if err != nil {
 		app.Stop()
 	}
@@ -148,8 +198,12 @@ func (c *Client) cmdRegister(username string, password string) {
 func (c *Client) cmdLogin(username string, password string) {
 	// Some validation
 	username = strings.ToLower(username)
+	// Add our username to our connection cache
+	c.Cache.Add("username", username)
 	// Generate password hash
 	hashString := security.SHA512HashEncode(password)
+	// Set our client password hash
+	c.Cache.Add("passHash", hashString)
 	// Calculate hash remainder
 	hashRemainder := hashString[32:48]
 	// Create our object to send
@@ -158,8 +212,6 @@ func (c *Client) cmdLogin(username string, password string) {
 		Password: hashRemainder,
 		Version:  VERSION,
 	}
-	// Set our local variables
-	pHash = hashString
 	// Send our username, hash remainder.
 	_, err := c.Send(
 		plib.CMD_LOGIN,
@@ -194,8 +246,13 @@ func (c *Client) svrBlock(p []byte) {
 		app.Stop()
 	}
 	// Set our available blocks
-	blocks = blockObj.Blocks
-	msgCost = blockObj.MsgCost
+	if err := c.Cache.Update("blocks", blockObj.Blocks); err != nil {
+		log.Fatal(err)
+	}
+	// Set our message cost
+	if err := c.Cache.Update("msgCost", blockObj.MsgCost); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (c *Client) svrRegister(p []byte) {
@@ -232,20 +289,39 @@ func (c *Client) svrLogin(p []byte) {
 		})
 		return
 	}
-	// Set variables
-	c.Username = loginObj.Username // set our username
-	blocks = loginObj.Blocks // set our available blocks to spend
-	// Load our private key
-	b, err := utils.LoadFile(c.Username)
-	if err != nil {
+	// Make sure we have our encrypted private key
+	if loginObj.EncPrivKey == "" {
 		showError(ClientError{
-			Message: "Login failed. Unable to load private key for " + loginObj.Username + ".",
+			Message: "Missing private key. Internal error",
 			Button:  "Continue",
+			Continue: func() {
+				pages.SwitchToPage("login")
+			},
 		})
 		return
 	}
-	// Set our private key
-	privKey = string(b)
+	// Get our pass hash
+	passHash, err := c.Cache.Get("passHash")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Calculate hash key
+	hashKey := passHash.(string)[:32]
+	// Calculate hash remainder
+	hashRemainder := passHash.(string)[32:48]
+	// Decrypt private key
+	pKey, err := security.DecryptRSA(loginObj.EncPrivKey, []byte(hashRemainder), []byte(hashKey))
+	if err := c.Cache.Add("pKey", pKey); err != nil {
+		log.Fatal(err)
+	}
+	// Set our available blocks
+	if err := c.Cache.Update("blocks", loginObj.Blocks); err != nil {
+		log.Fatal(err)
+	}
+	// Set our message cost
+	if err := c.Cache.Update("msgCost", loginObj.MsgCost); err != nil {
+		log.Fatal(err)
+	}
 	// Success, switch pages
 	pages.SwitchToPage("inbox")
 	// get our contacts
