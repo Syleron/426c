@@ -50,7 +50,7 @@ func InboxPage() (id string, content tview.Primitive) {
 	userListContainer = tview.NewTable()
 	userListContainer.SetBorder(false)
 	userListContainer.SetBorderPadding(1, 0, 0, 0)
-	userListContainer.SetSelectable(true, true)
+	userListContainer.SetSelectable(false, false)
 
 	inputField = tview.NewInputField().
 		SetPlaceholder("Send message...").
@@ -58,6 +58,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
 			case tcell.KeyESC:
+				userListContainer.SetSelectable(true, false)
 				app.SetFocus(userListContainer)
 				// reset selection
 				for i := 0; i < userListContainer.GetRowCount(); i++ {
@@ -87,13 +88,15 @@ func InboxPage() (id string, content tview.Primitive) {
 		switch event.Key() {
 		case tcell.KeyESC:
 			inboxQuitModal()
+			userListContainer.SetSelectable(false, false)
 		case tcell.KeyTAB:
 			app.SetFocus(inboxToField)
+			userListContainer.SetSelectable(false, false)
 		case tcell.KeyEnter:
 			row, column := userListContainer.GetSelection()
 			username := userListContainer.GetCell(row, column)
 			// Mark our selected left table cell
-			username.SetTextColor(tcell.ColorRed)
+			username.SetTextColor(tcell.ColorDarkMagenta)
 			// Set our selected username
 			inboxSelectedUsername = username.Text
 			// Load our messages for the user
@@ -101,6 +104,8 @@ func InboxPage() (id string, content tview.Primitive) {
 			go inboxRetryFailedMessages(inboxSelectedUsername)
 			// Set focus on our message container
 			app.SetFocus(inputField)
+			// Make sure our user list non selectable
+			userListContainer.SetSelectable(false, false)
 		}
 		return event
 	})
@@ -109,9 +114,11 @@ func InboxPage() (id string, content tview.Primitive) {
 		switch event.Key() {
 		case tcell.KeyTAB:
 			app.SetFocus(userListContainer)
+			userListContainer.SetSelectable(true, false)
 		case tcell.KeyESC:
 			inboxQuitModal()
 		case tcell.KeyEnter:
+			userListContainer.SetSelectable(false, false)
 			// Check if user exists and get public key details
 			_, err := client.Send(packet.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
 				Username: inboxToField.GetText(),

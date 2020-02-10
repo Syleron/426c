@@ -39,9 +39,11 @@ func footer() *tview.TextView {
 
 	foot.SetBackgroundColor(tcell.NewRGBColor(48, 48, 48))
 
+	keysHelp := "[gray](ESC) Exit/Back (TAB) Navigate (ENTER) Select [white]"
+
 
 	// Do it first
-	fmt.Fprintf(foot, " v" + Version())
+	fmt.Fprintf(foot, keysHelp + " v" + Version())
 
 	// Then update every 2 seconds
 	go doEvery(1*time.Second, func() error {
@@ -57,7 +59,7 @@ func footer() *tview.TextView {
 			log.Fatal(err)
 		}
 		foot.Clear()
-		fmt.Fprintf(foot, " [_] "+strconv.Itoa(blocks.(int))+" / " + strconv.Itoa(msgCost.(int)))
+		fmt.Fprintf(foot, keysHelp + " [_] "+strconv.Itoa(blocks.(int))+" / " + strconv.Itoa(msgCost.(int)))
 		app.Draw()
 		return nil
 	})
