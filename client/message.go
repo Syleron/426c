@@ -105,13 +105,13 @@ func messageSubmit(toUser string, message string) {
 		false,
 	)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Encrypt our message using our details
 	fromKeyRing, err := gopenpgp.ReadArmoredKeyRing(strings.NewReader(pKey.(string)))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	encFromMsg, err := pgp.EncryptMessage(
 		message,
@@ -137,7 +137,7 @@ func messageSubmit(toUser string, message string) {
 	// Add our message to our local DB
 	id, err := dbMessageAdd(msgObj, msgObj.To)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Update our object with our db ID

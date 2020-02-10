@@ -58,7 +58,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
 			case tcell.KeyESC:
-				userListContainer.SetSelectable(true, false)
+				//userListContainer.SetSelectable(true, false)
 				app.SetFocus(userListContainer)
 				// reset selection
 				for i := 0; i < userListContainer.GetRowCount(); i++ {
@@ -87,11 +87,11 @@ func InboxPage() (id string, content tview.Primitive) {
 	userListContainer.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyESC:
+			userListContainer.SetSelectable(false, false)
 			inboxQuitModal()
-			userListContainer.SetSelectable(false, false)
 		case tcell.KeyTAB:
-			app.SetFocus(inboxToField)
 			userListContainer.SetSelectable(false, false)
+			app.SetFocus(inboxToField)
 		case tcell.KeyEnter:
 			row, column := userListContainer.GetSelection()
 			username := userListContainer.GetCell(row, column)
@@ -113,8 +113,8 @@ func InboxPage() (id string, content tview.Primitive) {
 	inboxToField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB:
-			app.SetFocus(userListContainer)
 			userListContainer.SetSelectable(true, false)
+			app.SetFocus(userListContainer)
 		case tcell.KeyESC:
 			inboxQuitModal()
 		case tcell.KeyEnter:
