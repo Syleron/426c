@@ -16,6 +16,7 @@ var (
 	pages  = tview.NewPages()
 	layout *tview.Flex
 	client *Client
+	userList *UserList
 	db     *database.Database
 )
 
@@ -80,6 +81,8 @@ func main() {
 	db.CreateBucket("users")
 	// Setup our socket client
 	client, err = setupClient("proteus.426c.net:9000")
+	// Setup our user list
+	userList = NewUserList(userListContainer)
 	// Create the main layout
 	layout = tview.NewFlex().
 		SetDirection(tview.FlexRow).

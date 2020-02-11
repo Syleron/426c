@@ -1,5 +1,6 @@
 {
   "ip": "",
   "port": "",
-  "logging": 2
+  "logging": 2,
+  "registration": true
 }

@@ -20,7 +20,6 @@ import (
 // Register user onto the network using their public key
 
 // TODO - Creating groups (Permanent or not?) (Protected?)
-// TODO - Distribution of "blocks"
 // TODO - Charge blocks for sending a message
 // TODO - Increase the cost of blocks depending on total number of spam (Calculate the rate of messaging for a particular room)
 // TODO - Prevent people from sending plain text

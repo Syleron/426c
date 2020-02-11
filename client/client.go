@@ -324,8 +324,8 @@ func (c *Client) svrLogin(p []byte) {
 	}
 	// Success, switch pages
 	pages.SwitchToPage("inbox")
-	// get our contacts
-	go drawContactsList()
+	// Populate our user list
+	userList.PopulateFromDB()
 }
 
 func (c *Client) svrMsg(p []byte) {
@@ -345,6 +345,8 @@ func (c *Client) svrMsg(p []byte) {
 		// reload our message container
 		go messageLoad(msgObj.From, inboxMessageContainer)
 	}
+	// Increment our userlist indicator
+	userList.NewMessage(msgObj.From)
 }
 
 func (c *Client) svrMsgTo(p []byte) {
@@ -355,10 +357,17 @@ func (c *Client) svrMsgTo(p []byte) {
 	}
 	// Mark our request successful
 	if msgObj.Success {
+		// Update our message in our DB
 		dbMessageSuccess(msgObj.MsgID, msgObj.To)
+		// Update our user list
+		userList.SetUserOnline(msgObj.To)
 	} else {
+		// Update our message in our DB
 		dbMessageFail(msgObj.MsgID, msgObj.To)
-		inboxFailedMessageCount++
+		// Update our user list
+		userList.SetUserOffline(msgObj.To)
+		// Add to the number of failed messages we have.
+		inboxFailedMessageCount++ // TODO: Consider moving this to userlist
 	}
 	// redraw our messages
 	go messageLoad(msgObj.To, inboxMessageContainer)
@@ -381,8 +390,9 @@ func (c *Client) svrUser(p []byte) {
 	}
 	// Insert our user into our local DB
 	dbUserAdd(userObj.User)
+	// add user to our user list
+	userList.AddUser(userObj.User.Username)
 	// Reset UI
 	inboxToField.SetText("")
 	app.SetFocus(userListContainer)
-	go drawContactsList()
 }

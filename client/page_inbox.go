@@ -6,6 +6,7 @@ import (
 	"github.com/syleron/426c/common/models"
 	"github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
+	"strings"
 )
 
 var (
@@ -55,6 +56,7 @@ func InboxPage() (id string, content tview.Primitive) {
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
 			case tcell.KeyESC:
+				inboxDrawMOTD()
 				userListContainer.SetSelectable(true, false)
 				app.SetFocus(userListContainer)
 				// reset selection
@@ -93,9 +95,17 @@ func InboxPage() (id string, content tview.Primitive) {
 			row, column := userListContainer.GetSelection()
 			username := userListContainer.GetCell(row, column)
 			// Mark our selected left table cell
-			username.SetTextColor(tcell.ColorDarkMagenta)
+			username.SetTextColor(tcell.ColorWhite)
 			// Set our selected username
+			uA := strings.Fields(username.Text)
 			inboxSelectedUsername = username.Text
+			if len(uA) > 0 {
+				inboxSelectedUsername = strings.Fields(username.Text)[0]
+				iSUA := strings.Split(inboxSelectedUsername, "]")
+				inboxSelectedUsername = iSUA[1]
+			}
+			// Clear new messages
+			userList.ClearNewMessage(inboxSelectedUsername)
 			// Load our messages for the user
 			go messageLoad(inboxSelectedUsername, inboxMessageContainer)
 			go inboxRetryFailedMessages(inboxSelectedUsername)
@@ -139,36 +149,23 @@ func InboxPage() (id string, content tview.Primitive) {
 		AddItem(inboxMessageContainer, 0, 1, false).
 		AddItem(inputField, 1, 1, false), 0, 2, false)
 
-	// Get our contacts
-	go drawContactsList()
+	// Draw welcome text
+	inboxDrawMOTD()
 
 	return "inbox", grid
 }
 
-func drawContactsList() {
+func inboxDrawMOTD() {
 	app.QueueUpdateDraw(func() {
-		clientUsername, err := client.Cache.Get("username")
-		if err != nil {
-			return
-		}
-		// Clear our current list
-		userListContainer.Clear()
-		// Get our contacts from our db
-		users, err := dbUserList()
-		if err != nil {
-			app.Stop()
-		}
-		// List all of our contacts in our local DB
-		count := 0 // custom counter as skipping our user screws with the for one
-		for _, user := range users {
-			if user.Username != clientUsername {
-					userListContainer.SetCell(count, 0, tview.NewTableCell(user.Username))
-				count++
-			}
-		}
+		inboxMessageContainer.SetText(`  ____ ___  ____    
+ / / /|_  |/ __/____
+/_  _/ __// _ \/ __/
+ /_//____/\___/\__/ v` + VERSION + `
+
+WARNING: THE SECURTIY OF THIS RELEASE IS NOT GUARENTEED IN ANY WAY. DO NOT USE THIS SOFTWARE FOR MISSION CRITICAL COMMUNICATIONS. YOU MAY NOT BE SAFE.
+		`)
 	})
 }
-
 
 func inboxRetryFailedMessages(username string) {
 	clientUsername, err := client.Cache.Get("username")
