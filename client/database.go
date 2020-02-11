@@ -106,7 +106,7 @@ func dbMessagesGet(toUsername string, fromUsername string) ([]models.Message, er
 			var found models.Message
 
 			// only return 50 messages
-			if len(messages) >= 50 {
+			if len(messages) >= 25 {
 				return nil
 			}
 

@@ -46,21 +46,22 @@ func footer() *tview.TextView {
 	fmt.Fprintf(foot, keysHelp + " v" + Version())
 
 	// Then update every 2 seconds
-	go doEvery(1*time.Second, func() error {
-		if _, err := client.Cache.Get("username"); err != nil {
-			return nil
-		}
-		msgCost, err := client.Cache.Get("msgCost")
-		if err != nil {
-			log.Fatal(err)
-		}
-		blocks, err := client.Cache.Get("blocks")
-		if err != nil {
-			log.Fatal(err)
-		}
-		foot.Clear()
-		fmt.Fprintf(foot, keysHelp + " [_] "+strconv.Itoa(blocks.(int))+" / " + strconv.Itoa(msgCost.(int)))
-		app.Draw()
+	go doEvery(2*time.Second, func() error {
+		app.QueueUpdateDraw(func() {
+			if _, err := client.Cache.Get("username"); err != nil {
+				return
+			}
+			msgCost, err := client.Cache.Get("msgCost")
+			if err != nil {
+				log.Fatal(err)
+			}
+			blocks, err := client.Cache.Get("blocks")
+			if err != nil {
+				log.Fatal(err)
+			}
+			foot.Clear()
+			fmt.Fprintf(foot, keysHelp+" [_] "+strconv.Itoa(blocks.(int))+" / "+strconv.Itoa(msgCost.(int)))
+		})
 		return nil
 	})
 

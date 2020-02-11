@@ -40,10 +40,7 @@ func InboxPage() (id string, content tview.Primitive) {
 	inboxMessageContainer = tview.NewTextView().
 		SetDynamicColors(true).
 		SetRegions(true).
-		SetWordWrap(true).
-		SetChangedFunc(func() {
-			app.Draw()
-		})
+		SetWordWrap(true)
 
 	inboxMessageContainer.SetScrollable(true)
 
@@ -149,26 +146,27 @@ func InboxPage() (id string, content tview.Primitive) {
 }
 
 func drawContactsList() {
-	clientUsername, err := client.Cache.Get("username")
-	if err != nil {
-		return
-	}
-	// Clear our current list
-	userListContainer.Clear()
-	// Get our contacts from our db
-	users, err := dbUserList()
-	if err != nil {
-		app.Stop()
-	}
-	// List all of our contacts in our local DB
-	count := 0 // custom counter as skipping our user screws with the for one
-	for _, user := range users {
-		if user.Username != clientUsername {
-			userListContainer.SetCell(count, 0, tview.NewTableCell(user.Username))
-			count++
+	app.QueueUpdateDraw(func() {
+		clientUsername, err := client.Cache.Get("username")
+		if err != nil {
+			return
 		}
-	}
-	app.Draw()
+		// Clear our current list
+		userListContainer.Clear()
+		// Get our contacts from our db
+		users, err := dbUserList()
+		if err != nil {
+			app.Stop()
+		}
+		// List all of our contacts in our local DB
+		count := 0 // custom counter as skipping our user screws with the for one
+		for _, user := range users {
+			if user.Username != clientUsername {
+					userListContainer.SetCell(count, 0, tview.NewTableCell(user.Username))
+				count++
+			}
+		}
+	})
 }
 
 

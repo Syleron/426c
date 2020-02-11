@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+
+// TODO: This needs to change so that there is some sort of cache in memory. As it's currently slowwww
 func messageLoad(username string, container *tview.TextView) {
 	clientUsername, err := client.Cache.Get("username")
 	if err != nil {
@@ -63,11 +65,11 @@ func messageLoad(username string, container *tview.TextView) {
 		// Finalize our string
 		result += fmsg + tablewriter.NEWLINE
 	}
-	// Clear our messages
-	container.Clear()
 	// Set our new message
-	container.SetText(result)
-	container.ScrollToEnd()
+	app.QueueUpdateDraw(func() {
+		container.SetText(result)
+		container.ScrollToEnd()
+	})
 }
 
 func messageSubmit(toUser string, message string) {

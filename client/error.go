@@ -18,6 +18,7 @@ func showError(mError ClientError) {
 				mError.Continue()
 			}
 		})
-	app.SetRoot(modal, true)
-	app.Draw()
+	app.QueueUpdateDraw(func() {
+		app.SetRoot(modal, true)
+	})
 }

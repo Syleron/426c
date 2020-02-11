@@ -37,6 +37,7 @@ func showModal(mModal ClientModal) {
 			}
 		}
 	})
-	app.SetRoot(modal, true)
-	app.Draw()
+	app.QueueUpdateDraw(func() {
+		app.SetRoot(modal, true)
+	})
 }
