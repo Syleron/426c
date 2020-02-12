@@ -19,7 +19,7 @@ An opportunity to learn and manufacture a tool that respects people's privacy.
 * E2E Encryption
 * Encryption at rest
 * No message logging or storage server side
-* Re-attempt message which failed to send
+* Message retry upon failure
 * "Block" issuing and cost per message.
 
 ## Prerequisites
