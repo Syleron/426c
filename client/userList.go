@@ -108,16 +108,16 @@ func (u *UserList) Get(username string) (string, error) {
 	// Define our base var
 	fUsername := ""
 
+	// Selected status
+	if username == inboxSelectedUsername {
+		fUsername += "-"
+	}
+
 	// Handle online status
 	if u.Users[username].Online {
 		fUsername += "[green]"
 	} else {
 		fUsername += "[red]"
-	}
-
-	// Selected status
-	if username == inboxSelectedUsername {
-		fUsername += "[:bu]"
 	}
 
 	// Add our username string
