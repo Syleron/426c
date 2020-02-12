@@ -8,9 +8,19 @@
   
 ## Overview
 
+426c is an end-to-end encrypted messenger written in Go.
+
 ## Why
 
+An opportunity to learn and manufacture a tool that respects people's privacy. 
+
 ## Features
+
+* E2E Encryption
+* Encryption at rest
+* No message logging or storage server side
+* Re-attempt message which failed to send
+* "Block" issuing and cost per message.
 
 ## Prerequisites
 
@@ -26,11 +36,8 @@ $ sudo make
 ...
 ```
 
-Lastly, you can install PulseHA by executing the following:
-
-```
-$ sudo make install
-...
-```
-
 ## License
+
+426c source code is available under the GPLv3 License which can be found in the LICENSE file.
+
+Copyright (c) 2020 Andrew Zak <andrew@linux.com>
