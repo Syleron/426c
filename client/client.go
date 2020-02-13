@@ -237,6 +237,20 @@ func (c *Client) cmdMsgTo(m *models.Message) {
 	}
 }
 
+func (c *Client) cmdUser(username string) error {
+	if username == "" {
+		return errors.New("please specify a username")
+	}
+	// Attempt to send our message
+	_, err := client.Send(plib.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
+		Username: username,
+	}))
+	if err != nil {
+		app.Stop()
+	}
+	return nil
+}
+
 // ||
 // Server Responses
 // ||
@@ -333,6 +347,11 @@ func (c *Client) svrMsg(p []byte) {
 	if err := json.Unmarshal(p, &msgObj); err != nil {
 		log.Debug("unable to unmarshal packet")
 		return
+	}
+	// Check if we have the user as a contact
+	_, err := dbUserGet(msgObj.From)
+	if err != nil {
+		c.cmdUser(msgObj.From)
 	}
 	// Mark our message as being received successfully
 	msgObj.Success = true

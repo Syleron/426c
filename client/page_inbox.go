@@ -3,9 +3,7 @@ package main
 import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
-	"github.com/syleron/426c/common/models"
-	"github.com/syleron/426c/common/packet"
-	"github.com/syleron/426c/common/utils"
+	"log"
 	"strings"
 )
 
@@ -56,6 +54,9 @@ func InboxPage() (id string, content tview.Primitive) {
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
 			case tcell.KeyESC:
+				// reset our selected user
+				inboxSelectedUsername = ""
+				userList.Draw()
 				inboxDrawMOTD()
 				userListContainer.SetSelectable(true, false)
 				app.SetFocus(userListContainer)
@@ -127,11 +128,8 @@ func InboxPage() (id string, content tview.Primitive) {
 		case tcell.KeyEnter:
 			userListContainer.SetSelectable(false, false)
 			// Check if user exists and get public key details
-			_, err := client.Send(packet.CMD_USER, utils.MarshalResponse(&models.UserRequestModel{
-				Username: inboxToField.GetText(),
-			}))
-			if err != nil {
-				panic(err)
+			if err := client.cmdUser(inboxToField.GetText()); err != nil {
+				log.Fatal(err)
 			}
 		}
 		return event
