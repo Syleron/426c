@@ -37,7 +37,7 @@ func dbUserBlockDebit(username string, total int) (int, error) {
 		return 0, err
 	}
 	if (user.Blocks - total) <= 0 {
-		user.Blocks = 0
+		return user.Blocks, errors.New("insufficient blocks")
 	} else {
 		user.Blocks -= total
 	}
