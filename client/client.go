@@ -355,6 +355,8 @@ func (c *Client) svrMsg(p []byte) {
 	}
 	// Mark our message as being received successfully
 	msgObj.Success = true
+	// Set our user online if they are current marked offline
+	userList.SetUserOnline(msgObj.From)
 	// Add our message to our local DB
 	if _, err := dbMessageAdd(&msgObj.Message, msgObj.From); err != nil {
 		panic(err)
