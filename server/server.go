@@ -162,6 +162,18 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		}))
 		return
 	}
+	// Debit our blocks
+	_, err = dbUserBlockDebit(c.Username, blockCalcCost())
+	if err != nil {
+		log.Debug("user has insufficient funds")
+		// TODO: This should return a blocks error
+		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
+			Success: false,
+			MsgID: msgObj.ID,
+			To: msgObj.To,
+		}))
+		return
+	}
 	// Set any data
 	msgObj.From = c.Username
 	msgObj.Date = time.Now()

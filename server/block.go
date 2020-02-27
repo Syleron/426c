@@ -26,7 +26,7 @@ var (
 // For example 1 / 10 = 0.10 *
 
 
-func blockCalcCost(n int) int {
+func blockCalcCost() int {
 	//t := math.Round(TCSCount / n)
 	return 1//TCSCount / n
 }
@@ -44,6 +44,7 @@ func blockDistribute(clients map[string]*Client) {
 			// Let the user know of their new block balance
 			c.Send(packet.SVR_BLOCK, utils.MarshalResponse(&models.BlockResponseModel{
 				Blocks: blocks,
+				MsgCost: blockCalcCost(),
 			}))
 		}
 	}

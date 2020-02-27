@@ -69,7 +69,9 @@ func (u *UserList) NewMessage(username string) {
 	u.Lock()
 	defer u.Unlock()
 	if _, ok := u.Users[username]; ok {
-		u.Users[username].NewMessages += 1
+		if inboxSelectedUsername != username {
+			u.Users[username].NewMessages += 1
+		}
 	}
 	u.Draw()
 }

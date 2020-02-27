@@ -93,6 +93,8 @@ func InboxPage() (id string, content tview.Primitive) {
 			userListContainer.SetSelectable(false, false)
 			app.SetFocus(inboxToField)
 		case tcell.KeyEnter:
+			// TODO: Check to make sure we have user armored data otherwise we will crash
+			// TODO: Or check to that we at least have the armored data and request it if we dont
 			row, column := userListContainer.GetSelection()
 			username := userListContainer.GetCell(row, column)
 			// Mark our selected left table cell
