@@ -163,7 +163,7 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		return
 	}
 	// Debit our blocks
-	_, err = dbUserBlockDebit(c.Username, blockCalcCost())
+	totalBlocks, err := dbUserBlockDebit(c.Username, blockCalcCost())
 	if err != nil {
 		log.Debug("user has insufficient funds")
 		// TODO: This should return a blocks error
@@ -192,6 +192,7 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		Success: true,
 		MsgID: msgObj.ID,
 		To: msgObj.To,
+		Blocks: totalBlocks,
 	}))
 }
 
@@ -296,6 +297,7 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		Success: true,
 		Message: "success",
 		Blocks: user.Blocks,
+		MsgCost: blockCalcCost(),
 		EncPrivKey: user.EncPrivKey,
 	}))
 }

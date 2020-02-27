@@ -380,6 +380,10 @@ func (c *Client) svrMsgTo(p []byte) {
 		dbMessageSuccess(msgObj.MsgID, msgObj.To)
 		// Update our user list
 		userList.SetUserOnline(msgObj.To)
+		// Set our available blocks
+		if err := c.Cache.Update("blocks", msgObj.Blocks); err != nil {
+			log.Fatal(err)
+		}
 	} else {
 		// Update our message in our DB
 		dbMessageFail(msgObj.MsgID, msgObj.To)

@@ -41,9 +41,6 @@ func dbUserBlockDebit(username string, total int) (int, error) {
 	} else {
 		user.Blocks -= total
 	}
-	if user.Blocks < total {
-		return user.Blocks, errors.New("insufficient blocks")
-	}
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("users"))
 		// Marshal user data into bytes.

@@ -27,6 +27,7 @@ type MsgToResponseModel struct {
 	Success bool `json:"success,omitempty"`
 	MsgID   int  `json:"msgID,omitempty"`
 	To string `json:"to,omitempty"`
+	Blocks     int    `json:"blocks,omitempty"`
 }
 
 type MsgResponseModel struct {
