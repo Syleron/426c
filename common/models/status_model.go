@@ -1,7 +1,10 @@
 package models
 
-type BlockResponseModel struct {
-	Blocks  int    `json:"blocks,omitempty"`
+// TC/S
+// Registered
+// Registration status (open/closed)
+
+type StatusResponseModel struct {
 	MsgCost int    `json:"msgCost,omitempty"`
 	OnlineUsers int `json:"onlineUsers,omitempty"`
 }

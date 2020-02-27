@@ -28,7 +28,7 @@ var (
 
 func blockCalcCost(n int) int {
 	//t := math.Round(TCSCount / n)
-	return 0//TCSCount / n
+	return 1//TCSCount / n
 }
 
 func blockDistribute(clients map[string]*Client) {
