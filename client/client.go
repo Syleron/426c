@@ -390,7 +390,9 @@ func (c *Client) svrMsgTo(p []byte) {
 		// Update our message in our DB
 		dbMessageFail(msgObj.MsgID, msgObj.To)
 		// Update our user list
-		userList.SetUserOffline(msgObj.To)
+		if msgObj.Blocks > 0 {
+			userList.SetUserOffline(msgObj.To)
+		}
 		// Add to the number of failed messages we have.
 		inboxFailedMessageCount++ // TODO: Consider moving this to userlist
 	}
