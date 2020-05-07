@@ -81,6 +81,9 @@ func main() {
 	db.CreateBucket("users")
 	// Setup our socket client
 	client, err = setupClient("proteus.426c.net:9000")
+	if err != nil {
+		log.Fatal("Unable to connect to 426c network")
+	}
 	// Setup our user list
 	userList = NewUserList(userListContainer)
 	// Create the main layout
