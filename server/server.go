@@ -31,10 +31,9 @@ import (
 // Store keys with server
 //
 
-
 type Server struct {
 	listener net.Listener
-	clients map[string]*Client
+	clients  map[string]*Client
 }
 
 func setupServer(laddr string) *Server {
@@ -54,7 +53,7 @@ func setupServer(laddr string) *Server {
 	log.Infof("listening on port %v\n", port)
 	s := &Server{
 		listener: listener,
-		clients: make(map[string]*Client),
+		clients:  make(map[string]*Client),
 	}
 	// Setup block distributor
 	go blockDistribute(s.clients)
@@ -82,7 +81,7 @@ func (s *Server) newClient(conn net.Conn) {
 		}
 	}()
 	client := &Client{
-		Conn:     conn,
+		Conn: conn,
 	}
 	br := bufio.NewReader(client.Conn)
 	packet, err := plib.PacketRead(br)
@@ -157,8 +156,8 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		log.Debug("unable to send message as user is offline")
 		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 			Success: false,
-			MsgID: msgObj.ID,
-			To: msgObj.To,
+			MsgID:   msgObj.ID,
+			To:      msgObj.To,
 		}))
 		return
 	}
@@ -169,8 +168,8 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		// TODO: This should return a blocks error
 		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 			Success: false,
-			MsgID: msgObj.ID,
-			To: msgObj.To,
+			MsgID:   msgObj.ID,
+			To:      msgObj.To,
 		}))
 		return
 	}
@@ -190,9 +189,9 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 	// reply to our sender to say it was successful
 	c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 		Success: true,
-		MsgID: msgObj.ID,
-		To: msgObj.To,
-		Blocks: totalBlocks,
+		MsgID:   msgObj.ID,
+		To:      msgObj.To,
+		Blocks:  totalBlocks,
 	}))
 }
 
@@ -216,9 +215,9 @@ func (s *Server) cmdUser(c *Client, p []byte) {
 	c.Send(plib.SVR_USER, utils.MarshalResponse(&models.UserResponseModel{
 		Success: true,
 		Message: "user found",
-		User:    models.User{
-			Username:       user.Username,
-			PubKey:         user.PubKey,
+		User: models.User{
+			Username: user.Username,
+			PubKey:   user.PubKey,
 		},
 	}))
 }
@@ -238,6 +237,7 @@ func (s *Server) cmdRegister(c *Client, p []byte) {
 		EncPrivKey:     registerObj.EncPrivKey,
 		PubKey:         registerObj.PubKey,
 		RegisteredDate: time.Now(),
+		Blocks:         20,
 		Access:         0,
 	}
 	// Register our user
@@ -294,10 +294,10 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 		log.Error(err)
 	}
 	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
-		Success: true,
-		Message: "success",
-		Blocks: user.Blocks,
-		MsgCost: blockCalcCost(),
+		Success:    true,
+		Message:    "success",
+		Blocks:     user.Blocks,
+		MsgCost:    blockCalcCost(),
 		EncPrivKey: user.EncPrivKey,
 	}))
 }
