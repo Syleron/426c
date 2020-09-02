@@ -78,8 +78,6 @@ func dbUserAdd(u *models.User) error {
 	})
 }
 
-func dbUserDelete() {}
-
 func dbUserGet(username string) (models.User, error) {
 	var user models.User
 	var ub []byte
@@ -118,3 +116,14 @@ func dbUserGet(username string) (models.User, error) {
 	return user, err
 }
 
+func dbMessageTokenGet(uid string) (models.MessageTokenModel, error) {
+
+}
+
+func dbMessageTokenAdd(mt *models.MessageTokenModel) {
+
+}
+
+func dbMessageTokenDelete(uid string) error {
+
+}
