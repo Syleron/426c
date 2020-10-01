@@ -117,7 +117,7 @@ func dbUserGet(username string) (models.User, error) {
 }
 
 func dbMessageTokenGet(uid string) (models.MessageTokenModel, error) {
-
+	return models.MessageTokenModel{}, nil
 }
 
 func dbMessageTokenAdd(mt *models.MessageTokenModel) {
@@ -125,5 +125,5 @@ func dbMessageTokenAdd(mt *models.MessageTokenModel) {
 }
 
 func dbMessageTokenDelete(uid string) error {
-
+	return nil
 }

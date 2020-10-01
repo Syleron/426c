@@ -49,11 +49,11 @@ func InboxPage() (id string, content tview.Primitive) {
 	userListContainer.SetSelectable(false, false)
 
 	inputField = tview.NewInputField().
-		SetPlaceholder("Send message...").
 		//SetAcceptanceFunc(tview.InputFieldInteger).
 		SetDoneFunc(func(key tcell.Key) {
 			switch key {
 			case tcell.KeyESC:
+				inputField.SetPlaceholder("")
 				// reset our selected user
 				inboxSelectedUsername = ""
 				userList.Draw()
@@ -114,6 +114,8 @@ func InboxPage() (id string, content tview.Primitive) {
 			go inboxRetryFailedMessages(inboxSelectedUsername)
 			// Set focus on our message container
 			app.SetFocus(inputField)
+			// Set our text
+			inputField.SetPlaceholder("Send message...")
 			// Make sure our user list non selectable
 			userListContainer.SetSelectable(false, false)
 		}
