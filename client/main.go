@@ -70,6 +70,7 @@ func footer() *tview.TextView {
 }
 
 func main() {
+	fmt.Print("Loading..")
 	var err error
 	mainCheckKeys()
 	// Load our database
