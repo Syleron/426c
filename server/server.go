@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"sync"
 )
 
 // Length of the user connected gives them currency
@@ -34,6 +35,7 @@ import (
 type Server struct {
 	listener net.Listener
 	clients  map[string]*Client
+    mu       sync.RWMutex
 }
 
 func setupServer(laddr string) *Server {
@@ -55,8 +57,8 @@ func setupServer(laddr string) *Server {
 		listener: listener,
 		clients:  make(map[string]*Client),
 	}
-	// Setup block distributor
-	go blockDistribute(s.clients)
+    // Setup block distributor
+    go blockDistribute(s)
 	return s
 }
 
@@ -64,7 +66,8 @@ func (s *Server) connectionHandler() {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			log.Error(conn)
+            log.Error(err)
+            continue
 		}
 		go s.newClient(conn)
 	}
@@ -86,7 +89,8 @@ func (s *Server) newClient(conn net.Conn) {
 	br := bufio.NewReader(client.Conn)
 	packet, err := plib.PacketRead(br)
 	if err != nil {
-		conn.Close()
+        conn.Close()
+        return
 	}
 	//// Handle initial request
 	s.commandRouter(client, packet)
@@ -115,11 +119,11 @@ func (s *Server) commandRouter(c *Client, p []byte) {
 		s.cmdRegister(c, p[1:])
 	case plib.CMD_USER:
 		log.Debug("message user command")
-		s.authCheck(c)
+        if !s.authCheck(c) { return }
 		s.cmdUser(c, p[1:])
 	case plib.CMD_MSGTO:
 		log.Debug("message msg to command")
-		s.authCheck(c)
+        if !s.authCheck(c) { return }
 		s.cmdMsgTo(c, p[1:])
 	default:
 		log.Warn("received unknown command -> ", string(p))
@@ -152,7 +156,10 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		return
 	}
 	// Make sure our user is online
-	if _, ok := s.clients[msgObj.To]; !ok {
+    s.mu.RLock()
+    _, ok := s.clients[msgObj.To]
+    s.mu.RUnlock()
+    if !ok {
 		log.Debug("unable to send message as user is offline")
 		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 			Success: false,
@@ -177,7 +184,10 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 	msgObj.From = c.Username
 	msgObj.Date = time.Now()
 	// Send our message to our recipient
-	_, err = s.clients[msgObj.To].Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
+    s.mu.RLock()
+    recipient := s.clients[msgObj.To]
+    s.mu.RUnlock()
+    _, err = recipient.Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
 		Message: msgObj.Message,
 	}))
 	if err != nil {
@@ -226,6 +236,10 @@ func (s *Server) cmdRegister(c *Client, p []byte) {
 	var registerObj models.RegisterRequestModel
 	if err := json.Unmarshal(p, &registerObj); err != nil {
 		log.Debug("unable to unmarshal packet")
+        c.Send(plib.SVR_REGISTER, utils.MarshalResponse(&models.RegisterResponseModel{
+            Success: false,
+            Message: "invalid register payload",
+        }))
 		return
 	}
 	// Some validation
@@ -241,9 +255,18 @@ func (s *Server) cmdRegister(c *Client, p []byte) {
 		Access:         0,
 	}
 	// Register our user
-	if err := dbUserAdd(user); err != nil {
-		log.Debug(err)
-	}
+    if err := dbUserAdd(user); err != nil {
+        log.Debug(err)
+        c.Send(plib.SVR_REGISTER, utils.MarshalResponse(&models.RegisterResponseModel{
+            Success: false,
+            Message: err.Error(),
+        }))
+        return
+    }
+    c.Send(plib.SVR_REGISTER, utils.MarshalResponse(&models.RegisterResponseModel{
+        Success: true,
+        Message: "registered",
+    }))
 }
 
 func (s *Server) cmdLogin(c *Client, p []byte) {
@@ -284,8 +307,8 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 	}
 	// Set our connection details
 	c.Username = loginObj.Username
-	// If our user already is connected, disconnect them.
-	if user, ok := s.clients[c.Username]; ok {
+    // If our user already is connected, disconnect them.
+    if user, ok := s.getClient(c.Username); ok {
 		// TODO: Should be a dedicated packet logging out the user.
 		user.Conn.Close()
 	}
@@ -303,14 +326,21 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 }
 
 func (s *Server) broadcast(cmdType int, buf []byte) {
-	for _, c := range s.clients {
-		go c.Send(cmdType, buf)
-	}
+    // Take a snapshot to avoid holding locks during network IO
+    s.mu.RLock()
+    clients := make([]*Client, 0, len(s.clients))
+    for _, c := range s.clients { clients = append(clients, c) }
+    s.mu.RUnlock()
+    for _, c := range clients {
+        go c.Send(cmdType, buf)
+    }
 }
 
 func (s *Server) clientAdd(username string, c *Client) error {
 	log.Debug("Adding client " + username)
-	_, exists := s.clients[username]
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    _, exists := s.clients[username]
 	if exists {
 		return errors.New("user already exists")
 	}
@@ -320,19 +350,22 @@ func (s *Server) clientAdd(username string, c *Client) error {
 
 func (s *Server) clientRemoveByUsername(username string) {
 	log.Debug("Removing client " + username)
-	_, exists := s.clients[username]
-	if exists {
-		delete(s.clients, username)
-	}
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    if _, exists := s.clients[username]; exists {
+        delete(s.clients, username)
+    }
 }
 
 func (s *Server) clientRemoveByConnection(conn net.Conn) {
-	for _, c := range s.clients {
-		if c.Conn == conn {
-			log.Info("Removing client " + c.Username)
-			delete(s.clients, c.Username)
-		}
-	}
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    for _, c := range s.clients {
+        if c.Conn == conn {
+            log.Info("Removing client " + c.Username)
+            delete(s.clients, c.Username)
+        }
+    }
 }
 
 func (s *Server) shutdown() {
@@ -343,10 +376,30 @@ func (s *Server) shutdown() {
 	os.Exit(0)
 }
 
-func (s *Server) authCheck(c *Client) {
-	// Make sure we have a session set otherwise we kill their connection
-	if c.Username == "" {
-		log.Warn("Unauthorised. Connection closed. " + c.Conn.RemoteAddr().String())
-		c.Conn.Close()
-	}
+func (s *Server) authCheck(c *Client) bool {
+    // Make sure we have a session set otherwise we kill their connection
+    if c.Username == "" {
+        log.Warn("Unauthorised. Connection closed. " + c.Conn.RemoteAddr().String())
+        c.Conn.Close()
+        return false
+    }
+    return true
+}
+
+// Helper methods for safe client access
+func (s *Server) getClient(username string) (*Client, bool) {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    c, ok := s.clients[username]
+    return c, ok
+}
+
+func (s *Server) listClients() []*Client {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    clients := make([]*Client, 0, len(s.clients))
+    for _, c := range s.clients {
+        clients = append(clients, c)
+    }
+    return clients
 }

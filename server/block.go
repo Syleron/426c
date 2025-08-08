@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/labstack/gommon/log"
-	"github.com/syleron/426c/common/models"
-	"github.com/syleron/426c/common/packet"
-	"github.com/syleron/426c/common/utils"
-	"time"
+    "github.com/labstack/gommon/log"
+    "github.com/syleron/426c/common/models"
+    "github.com/syleron/426c/common/packet"
+    "github.com/syleron/426c/common/utils"
+    "time"
 )
 
 var (
@@ -31,10 +31,15 @@ func blockCalcCost() int {
 	return 1//TCSCount / n
 }
 
-func blockDistribute(clients map[string]*Client) {
+func blockDistribute(s *Server) {
 	for _ = range time.Tick(10 * time.Minute) {
 		log.Debug("Issuing blocks..")
-		for _, c := range clients {
+        // Take a snapshot of clients under read lock
+        s.mu.RLock()
+        clients := make([]*Client, 0, len(s.clients))
+        for _, c := range s.clients { clients = append(clients, c) }
+        s.mu.RUnlock()
+        for _, c := range clients {
 			// Increase user blocks by pre-configured amount
 			blocks, err := dbUserBlockCredit(c.Username, 5)
 			if err != nil {
