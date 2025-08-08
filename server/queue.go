@@ -169,6 +169,7 @@ func (q *Queue) process() bool {
             metricMessagesSent.WithLabelValues("fail").Inc()
             continue
         }
+        recordMessageDelivered()
         // Success
         q.server.mu.RLock()
         sender, ok := q.server.clients[m.msg.From]
@@ -248,6 +249,7 @@ func (q *Queue) DrainFor(recipient string) {
         if _, err := rcpt.Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{ Message: m.msg.Message })); err != nil {
             break
         }
+        recordMessageDelivered()
         // notify sender if online
         q.server.mu.RLock()
         sender, ok := q.server.clients[m.msg.From]

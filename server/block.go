@@ -1,6 +1,8 @@
 package main
 
 import (
+    "math"
+    "sync/atomic"
     "github.com/labstack/gommon/log"
     "github.com/syleron/426c/common/models"
     "github.com/syleron/426c/common/packet"
@@ -10,7 +12,7 @@ import (
 
 var (
 	// The cost to send a message through the 426c network
-	msgCost int
+    msgCost int
 
 	// Total chat messages per second
 	TCSCount int
@@ -22,13 +24,66 @@ var (
 	distBlockTotal float32
 )
 
-// Total Chat's per second (TCS) / total number of users
-// For example 1 / 10 = 0.10 *
+// Adaptive cost calculator state (sliding window of delivered messages)
+const costWindowSeconds = 60
+var deliveredBuckets [costWindowSeconds]int64
+var deliveredIndex int64
+var currentCost int64 = 1
+var scaleFactor float64 = 1.0 // tuneable multiplier
+var maxCost int64 = 10        // clamp the cost to avoid extremes
 
+// recordMessageDelivered should be called whenever a message is successfully delivered
+func recordMessageDelivered() {
+    idx := atomic.LoadInt64(&deliveredIndex)
+    atomic.AddInt64(&deliveredBuckets[idx], 1)
+}
 
-func blockCalcCost() int {
-	//t := math.Round(TCSCount / n)
-	return 1//TCSCount / n
+// startCostCalculator runs a ticker to recompute cost every second based on recent throughput and online users
+func (s *Server) startCostCalculator() {
+    ticker := time.NewTicker(1 * time.Second)
+    defer ticker.Stop()
+    var lastTick time.Time
+    for {
+        select {
+        case <-ticker.C:
+            // Advance ring buffer
+            now := time.Now()
+            if lastTick.IsZero() || now.Sub(lastTick) >= time.Second {
+                // move index
+                next := (atomic.LoadInt64(&deliveredIndex) + 1) % costWindowSeconds
+                atomic.StoreInt64(&deliveredIndex, next)
+                atomic.StoreInt64(&deliveredBuckets[next], 0)
+                lastTick = now
+            }
+            // Sum window
+            var sum int64
+            for i := 0; i < costWindowSeconds; i++ {
+                sum += atomic.LoadInt64(&deliveredBuckets[i])
+            }
+            mps := float64(sum) / float64(costWindowSeconds)
+            // Get connected users
+            s.mu.RLock()
+            users := len(s.clients)
+            s.mu.RUnlock()
+            if users <= 0 {
+                atomic.StoreInt64(&currentCost, 1)
+                continue
+            }
+            perUserRate := mps / float64(users)
+            adaptive := int64(math.Ceil(perUserRate * scaleFactor))
+            if adaptive < 1 { adaptive = 1 }
+            if adaptive > maxCost { adaptive = maxCost }
+            atomic.StoreInt64(&currentCost, adaptive)
+        case <-s.shutdownCh:
+            return
+        }
+    }
+}
+
+func (s *Server) blockCalcCost() int {
+    cost := atomic.LoadInt64(&currentCost)
+    if cost < 1 { return 1 }
+    return int(cost)
 }
 
 func blockDistribute(s *Server) {
@@ -53,7 +108,7 @@ func blockDistribute(s *Server) {
                 // Let the user know of their new block balance
                 c.Send(packet.SVR_BLOCK, utils.MarshalResponse(&models.BlockResponseModel{
                     Blocks: blocks,
-                    MsgCost: blockCalcCost(),
+                    MsgCost: s.blockCalcCost(),
                 }))
                 metricBlocksIssued.Add(float64(5))
             }

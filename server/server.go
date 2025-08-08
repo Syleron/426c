@@ -66,7 +66,8 @@ func setupServer(laddr string) *Server {
     startMetricsServer(":2112", s.shutdownCh)
     // Initialize message queue
     s.queue = newQueue(s)
-    // Setup block distributor
+    // Setup adaptive cost calculator and block distributor
+    go s.startCostCalculator()
     go blockDistribute(s)
 	return s
 }
@@ -230,8 +231,8 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		}))
 		return
 	}
-	// Debit our blocks
-	totalBlocks, err := dbUserBlockDebit(c.Username, blockCalcCost())
+    // Debit our blocks using adaptive cost
+    totalBlocks, err := dbUserBlockDebit(c.Username, s.blockCalcCost())
 	if err != nil {
 		log.Debug("user has insufficient funds")
 		// TODO: This should return a blocks error
@@ -373,11 +374,11 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
     if s.queue != nil {
         go s.queue.DrainFor(c.Username)
     }
-	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
+    c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 		Success:    true,
 		Message:    "success",
 		Blocks:     user.Blocks,
-		MsgCost:    blockCalcCost(),
+        MsgCost:    s.blockCalcCost(),
 		EncPrivKey: user.EncPrivKey,
 	}))
 }
