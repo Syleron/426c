@@ -308,3 +308,14 @@ func (q *Queue) sweepExpired() {
     // Since we do not persist payloads, we only delete tokens; queue items are removed by delivery or manual removal
     // No direct index of tokens -> we cannot list; so no-op here without a token index.
 }
+
+// TotalLen returns the total number of queued messages across all recipients
+func (q *Queue) TotalLen() int {
+    q.Lock()
+    defer q.Unlock()
+    total := 0
+    for _, arr := range q.queues {
+        total += len(arr)
+    }
+    return total
+}

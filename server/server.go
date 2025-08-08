@@ -83,7 +83,9 @@ func (s *Server) connectionHandler() {
                 s.mu.RLock()
                 connected := len(s.clients)
                 s.mu.RUnlock()
-                log.Infof("connected users: %d, msgCost: %d", connected, s.blockCalcCost())
+                qlen := 0
+                if s.queue != nil { qlen = s.queue.TotalLen() }
+                log.Infof("connected users: %d, msgCost: %d, queued: %d", connected, s.blockCalcCost(), qlen)
                 metricConnectedUsers.Set(float64(connected))
             case <-s.shutdownCh:
                 return
