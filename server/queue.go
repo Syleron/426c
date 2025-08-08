@@ -9,6 +9,7 @@ import (
 	"github.com/syleron/426c/common/utils"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type Queue struct {
@@ -29,7 +30,7 @@ func newQueue(s *Server) *Queue {
 		server: s,
 	}
 	// start the queue in a go routine
-	go scheduler(q.process, 1000)
+    go scheduler(q.process, time.Second)
 	// return our queue
 	return q
 }
