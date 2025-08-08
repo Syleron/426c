@@ -41,33 +41,25 @@ func (q *Queue) Add(msgObj *models.MsgToRequestModel) {
 	hasher := md5.New()
 	hasher.Write([]byte(msgObj.From + ":" + msgObj.To + ":" + strconv.Itoa(msgObj.ID)))
 	uid := hex.EncodeToString(hasher.Sum(nil))
-	// Check to see if our UID exists
-	msgToken, err := dbMessageTokenGet(uid)
-	if err != nil {
-		log.Debug("queue item already exists, sending update chat message state")
-		// Our token already exists so let the sender know!
-		q.server.clients[msgObj.From].Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
-			Success: msgToken.Success,
-			MsgID:   msgObj.ID,
-			To:      msgObj.To, // Needed?
-		}))
-		// Double check to see if our message still exists in queue
-		if !q.queueItemExists(uid) {
-			// Add the message into the queue
-			q.queue  = append(q.queue, &QueueItem{
-				msg: msgObj,
-				uid: uid,
-			})
-		}
-		return
-	}
-	// Add a message token to the database
-	dbMessageTokenAdd(&models.MessageTokenModel{
-		UID: uid,
-		Success: false,
-	})
+    // Check to see if our UID exists (dedupe)
+    if mt, err := dbMessageTokenGet(uid); err == nil {
+        log.Debug("queue item already exists, sending update chat message state")
+        // Token exists; notify sender with current state and avoid duplicate enqueue
+        q.server.clients[msgObj.From].Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
+            Success: mt.Success,
+            MsgID:   msgObj.ID,
+            To:      msgObj.To,
+        }))
+        // Ensure it is in queue if not yet processed
+        if !q.queueItemExists(uid) {
+            q.queue = append(q.queue, &QueueItem{msg: msgObj, uid: uid})
+        }
+        return
+    }
+    // No token exists → create one
+    _ = dbMessageTokenAdd(&models.MessageTokenModel{UID: uid, Success: false})
 	// Add the message into the queue
-	q.queue  = append(q.queue, &QueueItem{
+    q.queue  = append(q.queue, &QueueItem{
 		msg: msgObj,
 		uid: uid,
 	})

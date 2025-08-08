@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"github.com/labstack/gommon/log"
-	"github.com/syleron/426c/common/database"
-	"github.com/syleron/426c/common/security"
+    "fmt"
+    "github.com/labstack/gommon/log"
+    "github.com/syleron/426c/common/database"
+    "github.com/syleron/426c/common/security"
 )
 
 var (
@@ -26,8 +26,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// Make sure we have our users bucket
-	db.CreateBucket("users")
+    // Make sure we have our buckets
+    _ = db.CreateBucket("users")
+    _ = db.CreateBucket("message_tokens")
 	// Generate new RSA keys
 	if err := security.GenerateKeys("proteus.426c.net"); err != nil {
 		panic(err)

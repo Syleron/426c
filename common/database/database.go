@@ -1,11 +1,11 @@
 package database
 
 import (
-	"fmt"
-	"github.com/boltdb/bolt"
-	"github.com/labstack/gommon/log"
-	"os"
-	"path/filepath"
+    "fmt"
+    bolt "go.etcd.io/bbolt"
+    "github.com/labstack/gommon/log"
+    "os"
+    "path/filepath"
 )
 
 type Database struct {
