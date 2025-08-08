@@ -65,11 +65,14 @@ func setupServer(laddr string) *Server {
 func (s *Server) connectionHandler() {
     // Periodic log of connected users
     go func() {
-        for range time.Tick(30 * time.Second) {
+        ticker := time.NewTicker(10 * time.Second)
+        defer ticker.Stop()
+        for {
             s.mu.RLock()
             connected := len(s.clients)
             s.mu.RUnlock()
             log.Infof("connected users: %d", connected)
+            <-ticker.C
         }
     }()
     for {
