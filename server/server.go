@@ -56,14 +56,14 @@ func setupServer(laddr string) *Server {
 		panic(err)
 	}
 	log.Infof("listening on port %v\n", port)
-    // Initialize metrics and start metrics server (fixed port for now)
-    initMetrics()
-    startMetricsServer(":2112")
     s := &Server{
 		listener: listener,
 		clients:  make(map[string]*Client),
         shutdownCh: make(chan struct{}),
 	}
+    // Initialize metrics and start metrics server (fixed port for now)
+    initMetrics()
+    startMetricsServer(":2112", s.shutdownCh)
     // Initialize message queue
     s.queue = newQueue(s)
     // Setup block distributor
@@ -84,6 +84,26 @@ func (s *Server) connectionHandler() {
                 s.mu.RUnlock()
                 log.Infof("connected users: %d", connected)
                 metricConnectedUsers.Set(float64(connected))
+            case <-s.shutdownCh:
+                return
+            }
+        }
+    }()
+    // Keepalive pings for connected clients
+    go func() {
+        ticker := time.NewTicker(30 * time.Second)
+        defer ticker.Stop()
+        for {
+            select {
+            case <-ticker.C:
+                s.mu.RLock()
+                clients := make([]*Client, 0, len(s.clients))
+                for _, c := range s.clients { clients = append(clients, c) }
+                s.mu.RUnlock()
+                for _, c := range clients {
+                    // Ping via notice or a lightweight packet; will fail if dead
+                    c.SendNotice("ping")
+                }
             case <-s.shutdownCh:
                 return
             }
@@ -118,6 +138,8 @@ func (s *Server) newClient(conn net.Conn) {
 	client := &Client{
 		Conn: conn,
 	}
+    // Start async writer
+    client.startWriter(s.shutdownCh)
 	br := bufio.NewReader(client.Conn)
     // Set initial read deadline
     _ = client.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
@@ -138,6 +160,7 @@ func (s *Server) newClient(conn net.Conn) {
 		}
 		s.commandRouter(client, packet)
 	}
+    client.stopWriter()
 }
 
 func (s *Server) commandRouter(c *Client, p []byte) {
