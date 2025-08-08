@@ -1,9 +1,10 @@
 package packet
 
 import (
-"bufio"
-"bytes"
-"encoding/binary"
+    "bufio"
+    "bytes"
+    "encoding/binary"
+    "errors"
 )
 
 // Packet Structure [header (1)] [packet length (4)] [type (1)] [payload]
@@ -37,8 +38,10 @@ const (
 const HEADER_BYTE byte = '\xde'
 const MAX_NAME_LENGTH int = 65535
 
+const maxPacketLength = 1<<20 // 1 MiB safety cap
+
 func PacketRead (br *bufio.Reader) ([]byte, error) {
-	_, err := br.ReadBytes(HEADER_BYTE)
+    _, err := br.ReadBytes(HEADER_BYTE)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +58,10 @@ func PacketRead (br *bufio.Reader) ([]byte, error) {
 		read_bytes += nread
 	}
 	// Get rest of the packet
-	packetLen := int(binary.BigEndian.Uint32(packet))
+    packetLen := int(binary.BigEndian.Uint32(packet))
+    if packetLen <= 0 || packetLen > maxPacketLength {
+        return nil, errors.New("invalid packet length")
+    }
 	packet = make([]byte, packetLen)
 	read_bytes = 0
 	for read_bytes < packetLen {

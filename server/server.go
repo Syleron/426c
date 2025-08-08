@@ -150,6 +150,12 @@ func (s *Server) commandRouter(c *Client, p []byte) {
 	case plib.CMD_LOGIN:
 		log.Debug("message login command")
 		s.cmdLogin(c, p[1:])
+	case plib.CMD_IDENT: // treat as logout for now if payload indicates
+		log.Debug("message ident/logout command")
+		if c.LoggedIn() {
+			s.clientRemoveByUsername(c.Username)
+			c.Conn.Close()
+		}
 	case plib.CMD_REGISTER:
 		log.Debug("message register command")
 		s.cmdRegister(c, p[1:])
@@ -178,6 +184,16 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		log.Debug("unable to send message. user not specified")
 		return
 	}
+    // Self-send check
+    if c.Username != "" && strings.EqualFold(msgObj.To, c.Username) {
+        c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
+            Success: false,
+            MsgID:   msgObj.ID,
+            To:      msgObj.To,
+            Code:    "self_send_not_allowed",
+        }))
+        return
+    }
 	if msgObj.ID == 0 {
 		log.Debug("msg id is zero.. msgto failed")
 		return
@@ -208,13 +224,14 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 	msgObj.Date = time.Now()
     // Enqueue message for reliable delivery (online/offline)
     // The queue will notify sender upon successful delivery.
-    s.queue.Add(&msgObj)
-    // Optional: inform sender of new block balance and that message is queued
+    queued := s.queue.Add(&msgObj)
+    // Inform sender that message is queued or failed
     c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
-        Success: true,
+        Success: queued,
         MsgID:   msgObj.ID,
         To:      msgObj.To,
         Blocks:  totalBlocks,
+        Queued:  queued,
     }))
 }
 
@@ -291,11 +308,11 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 	// Some validation
 	loginObj.Username = strings.ToLower(loginObj.Username)
 	// Check version
-	if loginObj.Version != VERSION {
+    if loginObj.Version != VERSION {
 		log.Debug("client version mismatch")
 		c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 			Success: false,
-			Message: "Version mismatch. Please make sure you are running the latest version.",
+            Message: "Version mismatch. Please update your client.",
 		}))
 		return
 	}
@@ -329,6 +346,10 @@ func (s *Server) cmdLogin(c *Client, p []byte) {
 	if err := s.clientAdd(c.Username, c); err != nil {
 		log.Error(err)
 	}
+    // Drain any queued messages for this user immediately
+    if s.queue != nil {
+        go s.queue.DrainFor(c.Username)
+    }
 	c.Send(plib.SVR_LOGIN, utils.MarshalResponse(&models.LoginResponseModel{
 		Success:    true,
 		Message:    "success",

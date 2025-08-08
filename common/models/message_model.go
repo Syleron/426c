@@ -28,6 +28,8 @@ type MsgToResponseModel struct {
 	MsgID   int  `json:"msgID,omitempty"`
 	To string `json:"to,omitempty"`
 	Blocks     int    `json:"blocks,omitempty"`
+    Queued     bool   `json:"queued,omitempty"`
+    Code       string `json:"code,omitempty"`
 }
 
 type MsgResponseModel struct {
