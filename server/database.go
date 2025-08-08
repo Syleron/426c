@@ -6,7 +6,6 @@ import (
     bolt "go.etcd.io/bbolt"
     "github.com/labstack/gommon/log"
     "github.com/syleron/426c/common/models"
-    "github.com/syleron/426c/common/utils"
     "time"
 )
 

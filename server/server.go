@@ -38,6 +38,7 @@ type Server struct {
     closing  bool
     shutdownCh chan struct{}
     wg       sync.WaitGroup
+    queue    *Queue
 }
 
 func setupServer(laddr string) *Server {
@@ -55,11 +56,13 @@ func setupServer(laddr string) *Server {
 		panic(err)
 	}
 	log.Infof("listening on port %v\n", port)
-	s := &Server{
+    s := &Server{
 		listener: listener,
 		clients:  make(map[string]*Client),
         shutdownCh: make(chan struct{}),
 	}
+    // Initialize message queue
+    s.queue = newQueue(s)
     // Setup block distributor
     go blockDistribute(s)
 	return s
@@ -174,25 +177,12 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 		log.Debug("msg id is zero.. msgto failed")
 		return
 	}
-	// Make sure our user exists
-	_, err := dbUserGet(msgObj.To)
+    // Make sure our recipient user exists
+    _, err := dbUserGet(msgObj.To)
 	if err != nil {
 		c.Send(plib.SVR_USER, utils.MarshalResponse(&models.UserResponseModel{
 			Success: false,
 			Message: err.Error(),
-		}))
-		return
-	}
-	// Make sure our user is online
-    s.mu.RLock()
-    _, ok := s.clients[msgObj.To]
-    s.mu.RUnlock()
-    if !ok {
-		log.Debug("unable to send message as user is offline")
-		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
-			Success: false,
-			MsgID:   msgObj.ID,
-			To:      msgObj.To,
 		}))
 		return
 	}
@@ -211,26 +201,16 @@ func (s *Server) cmdMsgTo(c *Client, p []byte) {
 	// Set any data
 	msgObj.From = c.Username
 	msgObj.Date = time.Now()
-	// Send our message to our recipient
-    s.mu.RLock()
-    recipient := s.clients[msgObj.To]
-    s.mu.RUnlock()
-    _, err = recipient.Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
-		Message: msgObj.Message,
-	}))
-	if err != nil {
-		c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
-			Success: false,
-		}))
-		return
-	}
-	// reply to our sender to say it was successful
-	c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
-		Success: true,
-		MsgID:   msgObj.ID,
-		To:      msgObj.To,
-		Blocks:  totalBlocks,
-	}))
+    // Enqueue message for reliable delivery (online/offline)
+    // The queue will notify sender upon successful delivery.
+    s.queue.Add(&msgObj)
+    // Optional: inform sender of new block balance and that message is queued
+    c.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
+        Success: true,
+        MsgID:   msgObj.ID,
+        To:      msgObj.To,
+        Blocks:  totalBlocks,
+    }))
 }
 
 func (s *Server) cmdUser(c *Client, p []byte) {

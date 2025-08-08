@@ -69,9 +69,12 @@ func (q *Queue) process() bool {
 	q.Lock()
 	defer q.Unlock()
 	for i, m := range q.queue {
-		if _, ok := q.server.clients[m.msg.To]; ok {
+        q.server.mu.RLock()
+        recipient, ok := q.server.clients[m.msg.To]
+        q.server.mu.RUnlock()
+        if ok {
 			// Send our message to our recipient
-			_, err := q.server.clients[m.msg.To].Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
+            _, err := recipient.Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
 				Message: m.msg.Message,
 			}))
 			if err != nil {
@@ -80,14 +83,17 @@ func (q *Queue) process() bool {
 				return false
 			}
 			// Message successfully sent
-			if _, ok := q.server.clients[m.msg.From]; ok {
+            q.server.mu.RLock()
+            sender, ok := q.server.clients[m.msg.From]
+            q.server.mu.RUnlock()
+            if ok {
 				user, err := dbUserGet(m.msg.From)
 				if err != nil {
 					log.Debug("unable to process message user does not exist")
 					return false
 				}
 				// Let the sender know that the message successfully sent.
-				q.server.clients[m.msg.From].Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
+                sender.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 					Success: true,
 					MsgID:   m.msg.ID,
 					To:      m.msg.To, // Needed?

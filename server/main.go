@@ -5,6 +5,9 @@ import (
     "github.com/labstack/gommon/log"
     "github.com/syleron/426c/common/database"
     "github.com/syleron/426c/common/security"
+    "os"
+    "os/signal"
+    "syscall"
 )
 
 var (
@@ -36,6 +39,14 @@ func main() {
 	// Create new instance of server
 	server := setupServer(fmt.Sprintf(":%v", port))
 	defer server.shutdown()
+    // Handle OS signals for graceful shutdown
+    sigCh := make(chan os.Signal, 1)
+    signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+    go func() {
+        <-sigCh
+        log.Info("signal received, shutting down...")
+        server.shutdown()
+    }()
 	// Handle incoming connections
 	server.connectionHandler()
 }
