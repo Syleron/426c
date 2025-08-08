@@ -21,7 +21,8 @@ func (c *Client) Send(cmdType int, buf []byte) (int, error) {
 
 func (c *Client) SendNotice(msg string) (int, error) {
 	log.Debug("Sending notice to " + c.Username)
-	return c.Conn.Write(packet.PacketForm(byte(packet.SVR_NOTICE), []byte(msg)))
+    _ = c.Conn.SetWriteDeadline(time.Now().Add(15 * time.Second))
+    return c.Conn.Write(packet.PacketForm(byte(packet.SVR_NOTICE), []byte(msg)))
 }
 
 func (c *Client) LoggedIn() bool {

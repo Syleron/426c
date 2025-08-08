@@ -32,25 +32,32 @@ func blockCalcCost() int {
 }
 
 func blockDistribute(s *Server) {
-	for _ = range time.Tick(10 * time.Minute) {
-		log.Debug("Issuing blocks..")
-        // Take a snapshot of clients under read lock
-        s.mu.RLock()
-        clients := make([]*Client, 0, len(s.clients))
-        for _, c := range s.clients { clients = append(clients, c) }
-        s.mu.RUnlock()
-        for _, c := range clients {
-			// Increase user blocks by pre-configured amount
-			blocks, err := dbUserBlockCredit(c.Username, 5)
-			if err != nil {
-				log.Error(err)
-			}
-			log.Debug("Blocks total ", blocks, " for ", c.Username)
-			// Let the user know of their new block balance
-			c.Send(packet.SVR_BLOCK, utils.MarshalResponse(&models.BlockResponseModel{
-				Blocks: blocks,
-				MsgCost: blockCalcCost(),
-			}))
-		}
-	}
+    ticker := time.NewTicker(10 * time.Minute)
+    defer ticker.Stop()
+    for {
+        select {
+        case <-ticker.C:
+            log.Debug("Issuing blocks..")
+            // Take a snapshot of clients under read lock
+            s.mu.RLock()
+            clients := make([]*Client, 0, len(s.clients))
+            for _, c := range s.clients { clients = append(clients, c) }
+            s.mu.RUnlock()
+            for _, c := range clients {
+                // Increase user blocks by pre-configured amount
+                blocks, err := dbUserBlockCredit(c.Username, 5)
+                if err != nil {
+                    log.Error(err)
+                }
+                log.Debug("Blocks total ", blocks, " for ", c.Username)
+                // Let the user know of their new block balance
+                c.Send(packet.SVR_BLOCK, utils.MarshalResponse(&models.BlockResponseModel{
+                    Blocks: blocks,
+                    MsgCost: blockCalcCost(),
+                }))
+            }
+        case <-s.shutdownCh:
+            return
+        }
+    }
 }

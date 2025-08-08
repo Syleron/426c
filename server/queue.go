@@ -29,8 +29,19 @@ func newQueue(s *Server) *Queue {
 	q := &Queue{
 		server: s,
 	}
-	// start the queue in a go routine
-    go scheduler(q.process, time.Second)
+    // start the queue in a go routine with shutdown support
+    go func() {
+        ticker := time.NewTicker(time.Second)
+        defer ticker.Stop()
+        for {
+            select {
+            case <-ticker.C:
+                _ = q.process()
+            case <-s.shutdownCh:
+                return
+            }
+        }
+    }()
 	// return our queue
 	return q
 }
@@ -45,24 +56,33 @@ func (q *Queue) Add(msgObj *models.MsgToRequestModel) {
     if mt, err := dbMessageTokenGet(uid); err == nil {
         log.Debug("queue item already exists, sending update chat message state")
         // Token exists; notify sender with current state and avoid duplicate enqueue
-        q.server.clients[msgObj.From].Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
+        q.server.mu.RLock()
+        sender := q.server.clients[msgObj.From]
+        q.server.mu.RUnlock()
+        if sender != nil {
+            sender.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
             Success: mt.Success,
             MsgID:   msgObj.ID,
             To:      msgObj.To,
-        }))
+            }))
+        }
         // Ensure it is in queue if not yet processed
         if !q.queueItemExists(uid) {
+            q.Lock()
             q.queue = append(q.queue, &QueueItem{msg: msgObj, uid: uid})
+            q.Unlock()
         }
         return
     }
     // No token exists → create one
     _ = dbMessageTokenAdd(&models.MessageTokenModel{UID: uid, Success: false})
 	// Add the message into the queue
+    q.Lock()
     q.queue  = append(q.queue, &QueueItem{
 		msg: msgObj,
 		uid: uid,
 	})
+    q.Unlock()
 }
 
 func (q *Queue) process() bool {
@@ -82,7 +102,7 @@ func (q *Queue) process() bool {
 				// Failed to send message, we need to try again in the queue
 				return false
 			}
-			// Message successfully sent
+            // Message successfully sent
             q.server.mu.RLock()
             sender, ok := q.server.clients[m.msg.From]
             q.server.mu.RUnlock()
@@ -99,14 +119,17 @@ func (q *Queue) process() bool {
 					To:      m.msg.To, // Needed?
 					Blocks:  user.Blocks,
 				}))
-				// Remove the message token from our server DB
-				if err := dbMessageTokenDelete(m.uid); err != nil {
-					log.Error("failed to delete message token")
-				}
-				return false
+            }
+            // Remove the message token from our server DB
+            if err := dbMessageTokenDelete(m.uid); err != nil {
+                log.Error("failed to delete message token")
 			}
+            // Remove item from queue now that it is processed
+            q.queue = append(q.queue[:i], q.queue[i+1:]...)
+            // Continue processing next items
+            return false
 			// Remove item from queue
-			q.queue = append(q.queue[:i], q.queue[i+1:]...)
+            q.queue = append(q.queue[:i], q.queue[i+1:]...)
 		}
 	}
 	return false
