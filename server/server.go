@@ -10,8 +10,7 @@ import (
 	"github.com/syleron/426c/common/models"
 	plib "github.com/syleron/426c/common/packet"
 	"github.com/syleron/426c/common/utils"
-	"net"
-	"os"
+    "net"
 	"strings"
 	"time"
 	"sync"
@@ -36,6 +35,9 @@ type Server struct {
 	listener net.Listener
 	clients  map[string]*Client
     mu       sync.RWMutex
+    closing  bool
+    shutdownCh chan struct{}
+    wg       sync.WaitGroup
 }
 
 func setupServer(laddr string) *Server {
@@ -56,6 +58,7 @@ func setupServer(laddr string) *Server {
 	s := &Server{
 		listener: listener,
 		clients:  make(map[string]*Client),
+        shutdownCh: make(chan struct{}),
 	}
     // Setup block distributor
     go blockDistribute(s)
@@ -68,24 +71,33 @@ func (s *Server) connectionHandler() {
         ticker := time.NewTicker(10 * time.Second)
         defer ticker.Stop()
         for {
-            s.mu.RLock()
-            connected := len(s.clients)
-            s.mu.RUnlock()
-            log.Infof("connected users: %d", connected)
-            <-ticker.C
+            select {
+            case <-ticker.C:
+                s.mu.RLock()
+                connected := len(s.clients)
+                s.mu.RUnlock()
+                log.Infof("connected users: %d", connected)
+            case <-s.shutdownCh:
+                return
+            }
         }
     }()
     for {
 		conn, err := s.listener.Accept()
 		if err != nil {
+            if s.isClosing() {
+                break
+            }
             log.Error(err)
             continue
 		}
-		go s.newClient(conn)
+        go s.newClient(conn)
 	}
 }
 
 func (s *Server) newClient(conn net.Conn) {
+    s.wg.Add(1)
+    defer s.wg.Done()
 	log.Debug("New client connection")
 	defer func() {
 		// Remove our client
@@ -99,6 +111,8 @@ func (s *Server) newClient(conn net.Conn) {
 		Conn: conn,
 	}
 	br := bufio.NewReader(client.Conn)
+    // Set initial read deadline
+    _ = client.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	packet, err := plib.PacketRead(br)
 	if err != nil {
         conn.Close()
@@ -108,6 +122,8 @@ func (s *Server) newClient(conn net.Conn) {
 	s.commandRouter(client, packet)
 	// Handle subsequent requests
 	for {
+        // Refresh read deadline for each read
+        _ = client.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		packet, err = plib.PacketRead(br)
 		if err != nil {
 			break
@@ -382,10 +398,27 @@ func (s *Server) clientRemoveByConnection(conn net.Conn) {
 
 func (s *Server) shutdown() {
 	log.Debug("Server shutdown")
+    s.mu.Lock()
+    if s.closing {
+        s.mu.Unlock()
+        return
+    }
+    s.closing = true
+    close(s.shutdownCh)
+    s.mu.Unlock()
 	if err := s.listener.Close(); err != nil {
 		panic(err)
 	}
-	os.Exit(0)
+    // Snapshot clients and close their connections
+    s.mu.RLock()
+    clients := make([]*Client, 0, len(s.clients))
+    for _, c := range s.clients { clients = append(clients, c) }
+    s.mu.RUnlock()
+    for _, c := range clients {
+        _ = c.Conn.Close()
+    }
+    // Wait for client goroutines to finish
+    s.wg.Wait()
 }
 
 func (s *Server) authCheck(c *Client) bool {
@@ -414,4 +447,10 @@ func (s *Server) listClients() []*Client {
         clients = append(clients, c)
     }
     return clients
+}
+
+func (s *Server) isClosing() bool {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    return s.closing
 }
