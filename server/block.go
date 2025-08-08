@@ -55,6 +55,7 @@ func blockDistribute(s *Server) {
                     Blocks: blocks,
                     MsgCost: blockCalcCost(),
                 }))
+                metricBlocksIssued.Add(float64(5))
             }
         case <-s.shutdownCh:
             return

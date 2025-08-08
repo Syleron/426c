@@ -56,6 +56,9 @@ func setupServer(laddr string) *Server {
 		panic(err)
 	}
 	log.Infof("listening on port %v\n", port)
+    // Initialize metrics and start metrics server (fixed port for now)
+    initMetrics()
+    startMetricsServer(":2112")
     s := &Server{
 		listener: listener,
 		clients:  make(map[string]*Client),
@@ -94,6 +97,7 @@ func (s *Server) connectionHandler() {
             log.Error(err)
             continue
 		}
+        metricConnectionsTotal.Inc()
         go s.newClient(conn)
 	}
 }

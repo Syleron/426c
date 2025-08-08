@@ -88,6 +88,7 @@ func (q *Queue) Add(msgObj *models.MsgToRequestModel) {
 func (q *Queue) process() bool {
 	q.Lock()
 	defer q.Unlock()
+    metricQueueLength.Set(float64(len(q.queue)))
 	for i, m := range q.queue {
         q.server.mu.RLock()
         recipient, ok := q.server.clients[m.msg.To]
@@ -97,9 +98,10 @@ func (q *Queue) process() bool {
             _, err := recipient.Send(plib.SVR_MSG, utils.MarshalResponse(&models.MsgResponseModel{
 				Message: m.msg.Message,
 			}))
-			if err != nil {
+            if err != nil {
 				log.Debug("Failed to send message")
 				// Failed to send message, we need to try again in the queue
+                metricMessagesSent.WithLabelValues("fail").Inc()
 				return false
 			}
             // Message successfully sent
@@ -120,12 +122,14 @@ func (q *Queue) process() bool {
 					Blocks:  user.Blocks,
 				}))
             }
+            metricMessagesSent.WithLabelValues("success").Inc()
             // Remove the message token from our server DB
             if err := dbMessageTokenDelete(m.uid); err != nil {
                 log.Error("failed to delete message token")
 			}
             // Remove item from queue now that it is processed
             q.queue = append(q.queue[:i], q.queue[i+1:]...)
+            metricQueueLength.Set(float64(len(q.queue)))
             // Continue processing next items
             return false
 			// Remove item from queue
