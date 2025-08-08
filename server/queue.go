@@ -21,6 +21,7 @@ type Queue struct {
 type QueueItem struct {
 	uid string
 	msg *models.MsgToRequestModel
+    enq time.Time
 }
 
 func newQueue(s *Server) *Queue {
@@ -69,7 +70,7 @@ func (q *Queue) Add(msgObj *models.MsgToRequestModel) {
         // Ensure it is in queue if not yet processed
         if !q.queueItemExists(uid) {
             q.Lock()
-            q.queue = append(q.queue, &QueueItem{msg: msgObj, uid: uid})
+            q.queue = append(q.queue, &QueueItem{msg: msgObj, uid: uid, enq: time.Now()})
             q.Unlock()
         }
         return
@@ -78,10 +79,7 @@ func (q *Queue) Add(msgObj *models.MsgToRequestModel) {
     _ = dbMessageTokenAdd(&models.MessageTokenModel{UID: uid, Success: false})
 	// Add the message into the queue
     q.Lock()
-    q.queue  = append(q.queue, &QueueItem{
-		msg: msgObj,
-		uid: uid,
-	})
+    q.queue  = append(q.queue, &QueueItem{ msg: msgObj, uid: uid, enq: time.Now() })
     q.Unlock()
 }
 
@@ -114,6 +112,9 @@ func (q *Queue) process() bool {
 					log.Debug("unable to process message user does not exist")
 					return false
 				}
+                if !m.enq.IsZero() {
+                    metricMessageDeliverySeconds.Observe(time.Since(m.enq).Seconds())
+                }
 				// Let the sender know that the message successfully sent.
                 sender.Send(plib.SVR_MSGTO, utils.MarshalResponse(&models.MsgToResponseModel{
 					Success: true,

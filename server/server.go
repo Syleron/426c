@@ -83,6 +83,7 @@ func (s *Server) connectionHandler() {
                 connected := len(s.clients)
                 s.mu.RUnlock()
                 log.Infof("connected users: %d", connected)
+                metricConnectedUsers.Set(float64(connected))
             case <-s.shutdownCh:
                 return
             }

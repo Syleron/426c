@@ -49,6 +49,15 @@ var (
 			Help:      "Total number of blocks issued to users.",
 		},
 	)
+
+    metricMessageDeliverySeconds = prometheus.NewHistogram(
+        prometheus.HistogramOpts{
+            Namespace: "c426",
+            Name:      "message_delivery_seconds",
+            Help:      "Time from enqueue to successful delivery.",
+            Buckets:   prometheus.DefBuckets,
+        },
+    )
 )
 
 func initMetrics() {
@@ -57,6 +66,7 @@ func initMetrics() {
 	prometheus.MustRegister(metricMessagesSent)
 	prometheus.MustRegister(metricQueueLength)
 	prometheus.MustRegister(metricBlocksIssued)
+    prometheus.MustRegister(metricMessageDeliverySeconds)
 }
 
 func startMetricsServer(addr string) {
