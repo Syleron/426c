@@ -63,7 +63,16 @@ func setupServer(laddr string) *Server {
 }
 
 func (s *Server) connectionHandler() {
-	for {
+    // Periodic log of connected users
+    go func() {
+        for range time.Tick(30 * time.Second) {
+            s.mu.RLock()
+            connected := len(s.clients)
+            s.mu.RUnlock()
+            log.Infof("connected users: %d", connected)
+        }
+    }()
+    for {
 		conn, err := s.listener.Accept()
 		if err != nil {
             log.Error(err)
