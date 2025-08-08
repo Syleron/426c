@@ -75,7 +75,7 @@ func setupServer(laddr string) *Server {
 func (s *Server) connectionHandler() {
     // Periodic log of connected users
     go func() {
-        ticker := time.NewTicker(10 * time.Second)
+        ticker := time.NewTicker(30 * time.Second)
         defer ticker.Stop()
         for {
             select {
@@ -83,7 +83,7 @@ func (s *Server) connectionHandler() {
                 s.mu.RLock()
                 connected := len(s.clients)
                 s.mu.RUnlock()
-                log.Infof("connected users: %d", connected)
+                log.Infof("connected users: %d, msgCost: %d", connected, s.blockCalcCost())
                 metricConnectedUsers.Set(float64(connected))
             case <-s.shutdownCh:
                 return
